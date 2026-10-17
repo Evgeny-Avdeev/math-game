@@ -1,6 +1,7 @@
+import {playerPortrait} from './player-portraits.mjs?v=8';
 // Original vector portraits: playful illustrations, rather than breed identification photos.
 export function portrait(item){
- if(item.pet==='football')return footballPortrait(item);
+ if(item.pet==='football')return playerPortrait(item)||footballPortrait(item);
  const l=item.look||{},coat=l.coat||'#e7ac68',muzzle=l.muzzle||'#fff2df',eyes=l.eyes||'#43384f';
  const isDog=item.pet==='dog';
  let ears='';

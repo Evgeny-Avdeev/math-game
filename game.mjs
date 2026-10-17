@@ -1,5 +1,5 @@
-import {getWorld} from './worlds.mjs?v=7';
-export {missions,artifacts} from './space.mjs?v=7';
+import {getWorld} from './worlds.mjs?v=8';
+export {missions,artifacts} from './space.mjs?v=8';
 export const badgeDefs=[
  {id:'first',icon:'🏅',name:'Первый полёт',description:'Заверши первую миссию',test:p=>p.completed>=1},
  {id:'streak',icon:'🔥',name:'На одной волне',description:'Реши 5 подряд с первого раза без подсказок',test:p=>p.bestStreak>=5},

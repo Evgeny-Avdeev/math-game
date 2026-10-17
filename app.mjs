@@ -1,7 +1,7 @@
-import {makeProblems,hint} from './math.mjs?v=7';
-import {badgeDefs,cleanProfile,settle} from './game.mjs?v=7';
-import {worlds,getWorld,amount} from './worlds.mjs?v=7';
-import {portrait} from './portraits.mjs?v=7';
+import {makeProblems,hint} from './math.mjs?v=8';
+import {badgeDefs,cleanProfile,settle} from './game.mjs?v=8';
+import {worlds,getWorld,amount} from './worlds.mjs?v=8';
+import {portrait} from './portraits.mjs?v=8';
 const $=id=>document.getElementById(id);
 let worldId='space',world,missions,artifacts,profile,storageOK=true;
 const profiles={};
@@ -43,6 +43,7 @@ function renderCollection(){
   for(const [i,a] of artifacts.filter(a=>a.mission===m.id).entries()){
    const owned=profile.items.includes(a.id);const b=el('button',`artifact${owned?'':' locked'}`);
    b.append(itemImage(a,owned),el('b','',owned?a.name:`${world.secret} ${i+1}`),el('small','',owned?'Нажми: узнаешь историю':`Пройди эту миссию ${i+1} ${i===0?'раз':i<4?'раза':'раз'}`));
+   if(owned&&a.pet==='football'){b.append(el('span','player-meta',`${a.country} · ${a.role}`),el('span','player-bio',a.story));}
    b.onclick=()=>openArtifact(a,owned,m);grid.append(b);
   }
   set.append(head,grid);$('sets').append(set);

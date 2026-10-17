@@ -1,5 +1,5 @@
-import {footballWorld} from './football.mjs?v=7';
-import {missions as spaceMissions,artifacts as spaceArtifacts} from './space.mjs?v=7';
+import {footballWorld} from './football.mjs?v=8';
+import {missions as spaceMissions,artifacts as spaceArtifacts} from './space.mjs?v=8';
 const colors=[['#4b9878','#e4f7cf'],['#438fc1','#e2f3ff'],['#a56abe','#f5e6ff'],['#db9440','#fff1cc']];
 const missionTypes=[{mode:'mixed',level:'all',count:10,symbol:'+'},{mode:'mixed',level:'all',count:10,symbol:'−'},{mode:'mixed',level:'all',count:10,symbol:'±'},{mode:'mixed',level:'carry',count:12,symbol:'✦'}];
 function petMissions(prefix,titles,places){return missionTypes.map((m,i)=>({...m,id:prefix+i,title:titles[i],subtitle:['Плюс, минус и новые друзья. Начнём приключение!','Считай вперемешку и находи новых друзей!','Плюс и минус вперемешку. Справимся вместе!','Переходи через десяток. Ты уже многое умеешь!'][i],accent:colors[i][0],tint:colors[i][1],set:places[i]}));}
