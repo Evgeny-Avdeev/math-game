@@ -26,3 +26,5 @@ body[data-world=football] #artifactDetail p{font-size:16px;line-height:1.8}
 body[data-world=football] .reward-box .pet-image{height:260px}
 body[data-world=football] .mission-pet{width:140px;height:160px;padding-top:4px}
 body[data-world=football] .mission-pet svg{height:100%;width:100%}
+/* Keep each mission's action at the bottom of its grid row. */
+.mission{display:flex;flex-direction:column}.mission-art{flex-shrink:0}.mission-body{display:flex;flex-direction:column;flex:1}.mission-meta{margin-top:auto}.mission-body>button{flex-shrink:0}
