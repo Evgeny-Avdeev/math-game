@@ -43,7 +43,6 @@ function renderCollection(){
   for(const [i,a] of artifacts.filter(a=>a.mission===m.id).entries()){
    const owned=profile.items.includes(a.id);const b=el('button',`artifact${owned?'':' locked'}`);
    b.append(itemImage(a,owned),el('b','',owned?a.name:`${world.secret} ${i+1}`),el('small','',owned?'Нажми: узнаешь историю':`Пройди эту миссию ${i+1} ${i===0?'раз':i<4?'раза':'раз'}`));
-   if(owned&&a.pet==='football'){b.append(el('span','player-meta',`${a.country} · ${a.role}`),el('span','player-bio',a.story));}
    b.onclick=()=>openArtifact(a,owned,m);grid.append(b);
   }
   set.append(head,grid);$('sets').append(set);
