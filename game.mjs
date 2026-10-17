@@ -1,5 +1,5 @@
-import {getWorld} from './worlds.mjs?v=3';
-export {missions,artifacts} from './space.mjs?v=3';
+import {getWorld} from './worlds.mjs?v=4';
+export {missions,artifacts} from './space.mjs?v=4';
 export const badgeDefs=[
  {id:'first',icon:'🏅',name:'Первый полёт',description:'Заверши первую миссию',test:p=>p.completed>=1},
  {id:'streak',icon:'🔥',name:'На одной волне',description:'Реши 5 подряд с первого раза без подсказок',test:p=>p.bestStreak>=5},
@@ -25,6 +25,6 @@ export function settle(profile,records,missionId,bestStreak,worldId='space'){
  let reward=null;
  if(success){p.completed++;reward=artifacts.find(a=>a.mission===missionId&&!p.items.includes(a.id))||null;if(reward)p.items.push(reward.id);}
  const stars=earned+(success?10:0);p.stars+=stars;
- const badges=badgeDefs.filter(b=>!p.badges.includes(b.id)&&b.test(p));p.badges.push(...badges.map(b=>b.id));
+ const badges=badgeDefs.filter(b=>!p.badges.includes(b.id)&&(b.id==='collector'?p.items.length===artifacts.length:b.test(p)));p.badges.push(...badges.map(b=>b.id));
  return {profile:p,stars,solved,reward,badges,success};
 }

@@ -1,7 +1,7 @@
-import {makeProblems,hint} from './math.mjs?v=3';
-import {badgeDefs,cleanProfile,settle} from './game.mjs?v=3';
-import {worlds,getWorld,amount} from './worlds.mjs?v=3';
-import {portrait} from './portraits.mjs?v=3';
+import {makeProblems,hint} from './math.mjs?v=4';
+import {badgeDefs,cleanProfile,settle} from './game.mjs?v=4';
+import {worlds,getWorld,amount} from './worlds.mjs?v=4';
+import {portrait} from './portraits.mjs?v=4';
 const $=id=>document.getElementById(id);
 let worldId='space',world,missions,artifacts,profile,storageOK=true;
 const profiles={};
@@ -15,7 +15,7 @@ function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className
 function theme(e,m){e.style.setProperty('--accent',m.accent);e.style.setProperty('--tint',m.tint);}
 function view(id){for(const e of document.querySelectorAll('.view'))e.hidden=e.id!==id;for(const b of document.querySelectorAll('nav [data-view]')){b.classList.toggle('active',b.dataset.view===id);b.setAttribute('aria-current',b.dataset.view===id?'page':'false');}window.scrollTo({top:0,behavior:'instant'});}
 function updateProfile(){
- $('wallet').textContent=profile.stars;$('collectionCount').textContent=`${profile.items.length}/12`;$('collectionTotal').textContent=`${profile.items.length} / 12`;
+ $('wallet').textContent=profile.stars;$('collectionCount').textContent=`${profile.items.length}/${artifacts.length}`;$('collectionTotal').textContent=`${profile.items.length} / ${artifacts.length}`;
  const level=Math.floor(profile.stars/50)+1;
  $('rank').textContent=world.rank[level<3?0:level<6?1:level<10?2:3];
  $('levelInfo').textContent=`Уровень ${level} · ${profile.stars%50} из 50 ${world.unit[2]} до следующего`;$('levelProgress').style.width=`${profile.stars%50*2}%`;
@@ -26,19 +26,19 @@ function updateProfile(){
 function renderMissions(){
  $('missions').replaceChildren();
  for(const [i,m] of missions.entries()){
-  const n=artifacts.filter(a=>a.mission===m.id&&profile.items.includes(a.id)).length;
+  const total=artifacts.filter(a=>a.mission===m.id).length;const n=artifacts.filter(a=>a.mission===m.id&&profile.items.includes(a.id)).length;
   const card=el('article','mission');theme(card,m);
-  const art=el('div','mission-art');if(worldId==='space')art.append(el('div','planet',m.symbol));else{const pic=el('div','mission-pet');pic.innerHTML=portrait(artifacts[i*3]);art.append(pic,el('span','math-sticker',m.symbol));}art.setAttribute('aria-hidden','true');
-  if(n===3)art.append(el('span','mission-complete','Коллекция собрана ✓'));
+  const art=el('div','mission-art');if(worldId==='space')art.append(el('div','planet',m.symbol));else{const pic=el('div','mission-pet');pic.innerHTML=portrait(artifacts.find(a=>a.mission===m.id));art.append(pic,el('span','math-sticker',m.symbol));}art.setAttribute('aria-hidden','true');
+  if(n===total)art.append(el('span','mission-complete','Коллекция собрана ✓'));
   const body=el('div','mission-body');body.append(el('span','mission-num',`МИССИЯ 0${i+1}`),el('h3','',m.title),el('p','',m.subtitle));
-  const meta=el('div','mission-meta');meta.append(el('span','',`${m.count} примеров · + и −`),el('span','',`${world.collectionIcon} ${n}/3 · +10 ${world.unit[2]}`));
-  const b=el('button','',n===3?world.againAction:world.missionAction);b.onclick=()=>startMission(m.id);body.append(meta,b);card.append(art,body);$('missions').append(card);
+  const meta=el('div','mission-meta');meta.append(el('span','',`${m.count} примеров · + и −`),el('span','',`${world.collectionIcon} ${n}/${total} · +10 ${world.unit[2]}`));
+  const b=el('button','',n===total?world.againAction:world.missionAction);b.onclick=()=>startMission(m.id);body.append(meta,b);card.append(art,body);$('missions').append(card);
  }
 }
 function renderCollection(){
  $('sets').replaceChildren();
  for(const m of missions){
-  const set=el('section','set');theme(set,m);const head=el('div','set-head');head.append(el('h2','',m.set),el('span','',`${artifacts.filter(a=>a.mission===m.id&&profile.items.includes(a.id)).length} из 3 найдено`));
+  const set=el('section','set');theme(set,m);const head=el('div','set-head');head.append(el('h2','',m.set),el('span','',`${artifacts.filter(a=>a.mission===m.id&&profile.items.includes(a.id)).length} из ${artifacts.filter(a=>a.mission===m.id).length} найдено`));
   const grid=el('div','artifacts');
   for(const [i,a] of artifacts.filter(a=>a.mission===m.id).entries()){
    const owned=profile.items.includes(a.id);const b=el('button',`artifact${owned?'':' locked'}`);
@@ -114,7 +114,7 @@ $('print').onclick=()=>{
 };
 applyWorld();updateProfile();view('home');
 
-function themedBadges(){return badgeDefs.map(b=>b.id==='first'?{...b,name:worldId==='space'?'Первый полёт':'Первое приключение'}:b.id==='collector'?{...b,name:worldId==='space'?'Хранитель сокровищ':'Вся команда в сборе!',description:worldId==='space'?'Собери все 12 артефактов':`Собери все 12 ${worldId==='dog'?'пород собак':'пород кошек'}`} : b);}
+function themedBadges(){return badgeDefs.map(b=>b.id==='first'?{...b,name:worldId==='space'?'Первый полёт':'Первое приключение'}:b.id==='collector'?{...b,name:worldId==='space'?'Хранитель сокровищ':'Вся команда в сборе!',description:worldId==='space'?'Собери все 12 артефактов':`Собери все ${artifacts.length} ${worldId==='dog'?'пород собак':'пород кошек'}`} : b);}
 function itemImage(a,owned){const d=el('span','artifact-image'+(a.pet?' pet-image':''));if(owned&&a.pet)d.innerHTML=portrait(a);else d.textContent=owned?a.icon:'🔒';return d;}
 function token(){const t=el('span',worldId==='cat'?'sausage-token':'currency-token',worldId==='cat'?'':world.rewardIcon);t.setAttribute('aria-hidden','true');return t;}
 function setCurrency(target,n){target.replaceChildren(token(),el('span','',String(n)));}
@@ -122,13 +122,13 @@ function applyWorld(){
  document.body.dataset.world=worldId;
  $('clubName').textContent=world.club;$('walletIcon').replaceChildren(token());$('walletUnit').textContent=world.unit[2];
  $('welcomeText').textContent=world.welcome;$('heroTitle').textContent=world.hero;$('heroIntro').textContent=world.intro;$('goMission').textContent=world.cta+' →';
- $('missionHeading').textContent=world.section;$('bannerTitle').textContent=world.banner;$('bannerText').textContent=world.bannerText;$('collectionTitle').textContent=world.collectionTitle;$('collectionNote').textContent=world.collectionNote;
+ $('missionHeading').textContent=world.section;$('missionNote').textContent=worldId==='space'?'12 сокровищ ждут тебя!':`${artifacts.length} хвостатых друзей ждут тебя!`;$('bannerTitle').textContent=world.banner;$('bannerText').textContent=world.bannerText;$('collectionTitle').textContent=world.collectionTitle;$('collectionNote').textContent=world.collectionNote;
  $('freeIntro').textContent=`Плюс и минус вперемешку. За ответы получай ${world.currency}!`;$('freeCollectionNote').textContent=`${worldId==='space'?'Артефакты':'Породы'} можно открыть в приключениях.`;
  $('buddyName').textContent=`Я ${world.buddy}!`;$('hint').textContent=`💡 ${world.buddy}, помоги!`;$('spaceArt').hidden=worldId!=='space';$('petHero').hidden=worldId==='space';
  $('buddyFace').replaceChildren();$('petHero').replaceChildren();
  if(worldId==='space')$('buddyFace').textContent='🤖';else{
-  const buddy=artifacts[0];$('buddyFace').innerHTML=portrait(buddy);
-  const bubble=el('span','pet-bubble',worldId==='dog'?'Гав! Дай лапу!':'Мур! Дай пять!');const face=el('div','hero-pet-face');face.innerHTML=portrait(buddy);
+  const buddy=world.mascot||artifacts[0];$('buddyFace').innerHTML=portrait(buddy);
+  const bubble=el('span','pet-bubble',worldId==='dog'?'Я Лорри! Дай лапу!':'Мур! Дай пять!');const face=el('div','hero-pet-face');face.innerHTML=portrait(buddy);
   const fun=el('span','pet-fun-token');fun.append(token());$('petHero').append(bubble,face,fun,el('span','pet-paw','🐾'),el('span','pet-math','＋ −'));
  }
  $('leave').textContent=`← К ${world.place}`;$('nextMission').textContent=`К ${world.place} →`;$('confirmLeave').textContent=`К ${world.place}`;$('celebration').replaceChildren(el('span','','🎉'),token(),el('span','','🎉'));
