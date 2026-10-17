@@ -1,7 +1,7 @@
-import {makeProblems,hint} from './math.mjs?v=6';
-import {badgeDefs,cleanProfile,settle} from './game.mjs?v=6';
-import {worlds,getWorld,amount} from './worlds.mjs?v=6';
-import {portrait} from './portraits.mjs?v=6';
+import {makeProblems,hint} from './math.mjs?v=7';
+import {badgeDefs,cleanProfile,settle} from './game.mjs?v=7';
+import {worlds,getWorld,amount} from './worlds.mjs?v=7';
+import {portrait} from './portraits.mjs?v=7';
 const $=id=>document.getElementById(id);
 let worldId='space',world,missions,artifacts,profile,storageOK=true;
 const profiles={};
@@ -120,6 +120,12 @@ function token(){const t=el('span',worldId==='cat'?'sausage-token':'currency-tok
 function setCurrency(target,n){target.replaceChildren(token(),el('span','',String(n)));}
 function applyWorld(){
  document.body.dataset.world=worldId;
+ const avatar=$('levelAvatar');avatar.replaceChildren();
+ const avatarNames={space:'Космонавт',dog:'Мальтипу Лорри',cat:'Котик',football:'Футболист'};
+ avatar.setAttribute('aria-label',avatarNames[worldId]);
+ if(worldId==='space')avatar.textContent='🧑‍🚀';
+ else if(worldId==='football')avatar.innerHTML='<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M7 61V48Q9 36 24 36H40Q55 36 57 48V61Z" fill="#35966e"/><path d="M24 36L32 45L40 36" fill="#fff7df"/><circle cx="32" cy="22" r="16" fill="#edbd91"/><path d="M16 21Q12 3 30 3Q51 1 49 23L43 17L38 11Q28 20 16 21Z" fill="#5a4139"/><circle cx="26" cy="23" r="1.7" fill="#493b44"/><circle cx="38" cy="23" r="1.7" fill="#493b44"/><path d="M27 30Q32 34 37 30" stroke="#925b52" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="47" cy="51" r="11" fill="white" stroke="#31574b" stroke-width="1.5"/><path d="M47 45L52 49L50 55H44L42 49Z" fill="#31574b"/></svg>';
+ else avatar.innerHTML=portrait(world.mascot||artifacts[0]);
  $('clubName').textContent=world.club;$('walletIcon').replaceChildren(token());$('walletUnit').textContent=world.unit[2];
  $('welcomeText').textContent=world.welcome;$('heroTitle').textContent=world.hero;$('heroIntro').textContent=world.intro;$('goMission').textContent=world.cta+' →';
  $('missionHeading').textContent=world.section;$('missionNote').textContent=world.missionNote||(worldId==='space'?`${artifacts.length} сокровищ ждут тебя!`:`${artifacts.length} хвостатых друзей ждут тебя!`);$('bannerTitle').textContent=world.banner;$('bannerText').textContent=world.bannerText;$('collectionTitle').textContent=world.collectionTitle;$('collectionNote').textContent=world.collectionNote;

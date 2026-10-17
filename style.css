@@ -14,3 +14,5 @@
 footer{flex-wrap:wrap}.dedication{flex-basis:100%;text-align:center;color:var(--purple);font-size:17px;font-weight:900;margin:13px 0 0;padding:18px 12px;border-top:2px dashed var(--outline);line-height:1.7}body[data-world=dog] .hero-pet-face{filter:drop-shadow(0 8px 0 #d7be9420)}@media(max-width:620px){.dedication{font-size:15px}}
 
 body[data-world=football]{--purple:#35966e;--dark:#26704f;--hero:#dff3cd;--bg:#f6fcf0;--outline:#cde3b9;--line:#d7e8cd;--ink:#2d5944;--muted:#6b8673}.world-buttons{grid-template-columns:repeat(4,minmax(0,1fr))}.world-buttons button[data-world-choice=football]{background:#ddf3ce;border-color:#b7d99a}body[data-world=football] .hero{background:linear-gradient(135deg,#eaf9da,#d8efb9)}body[data-world=football] .hero-pet-face{filter:drop-shadow(0 8px 0 #b8d49c40)}@media(max-width:900px){.world-buttons{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.level-icon{flex-shrink:0;overflow:hidden}.level-icon svg{display:block;width:100%;height:100%;object-fit:contain}.badge>span{display:block;font-size:32px;line-height:1.3;margin-bottom:8px}.badge.locked>span{opacity:.65}
