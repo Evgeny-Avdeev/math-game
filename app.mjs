@@ -1,7 +1,7 @@
-import {makeProblems,hint} from './math.mjs?v=5';
-import {badgeDefs,cleanProfile,settle} from './game.mjs?v=5';
-import {worlds,getWorld,amount} from './worlds.mjs?v=5';
-import {portrait} from './portraits.mjs?v=5';
+import {makeProblems,hint} from './math.mjs?v=6';
+import {badgeDefs,cleanProfile,settle} from './game.mjs?v=6';
+import {worlds,getWorld,amount} from './worlds.mjs?v=6';
+import {portrait} from './portraits.mjs?v=6';
 const $=id=>document.getElementById(id);
 let worldId='space',world,missions,artifacts,profile,storageOK=true;
 const profiles={};
@@ -42,7 +42,7 @@ function renderCollection(){
   const grid=el('div','artifacts');
   for(const [i,a] of artifacts.filter(a=>a.mission===m.id).entries()){
    const owned=profile.items.includes(a.id);const b=el('button',`artifact${owned?'':' locked'}`);
-   b.append(itemImage(a,owned),el('b','',owned?a.name:`${world.secret} ${i+1}`),el('small','',owned?'Нажми: узнаешь историю':`Пройди эту миссию ${i+1} ${i===0?'раз':'раза'}`));
+   b.append(itemImage(a,owned),el('b','',owned?a.name:`${world.secret} ${i+1}`),el('small','',owned?'Нажми: узнаешь историю':`Пройди эту миссию ${i+1} ${i===0?'раз':i<4?'раза':'раз'}`));
    b.onclick=()=>openArtifact(a,owned,m);grid.append(b);
   }
   set.append(head,grid);$('sets').append(set);
@@ -89,10 +89,10 @@ function finish(){
  const result=settle(profile,records,missionId,bestStreak,worldId);profile=result.profile;save();
  lastMistakes=records.filter(r=>!r.first).map(r=>r.p);
  $('resultTitle').textContent=result.success?'Миссия выполнена!':result.solved===0?'Первый шаг сделан!':'Ты отлично потрудился!';
- $('resultText').textContent=result.success?(worldId==='space'?'Космос стал понятнее, а коллекция — богаче!':'В твоей команде появился новый хвостатый друг!'):missionId?`Для награды нужно решить хотя бы ${Math.ceil(problems.length*.8)} из ${problems.length} примеров. Попробуй ещё: ${world.buddy} поможет!`:'Каждый решённый пример делает тебя увереннее. Дай пять! 🖐';
+ $('resultText').textContent=result.success?(worldId==='space'?'Космос стал понятнее, а коллекция — богаче!':(world.successText||'В твоей команде появился новый хвостатый друг!')):missionId?`Для награды нужно решить хотя бы ${Math.ceil(problems.length*.8)} из ${problems.length} примеров. Попробуй ещё: ${world.buddy} поможет!`:'Каждый решённый пример делает тебя увереннее. Дай пять! 🖐';
  if(result.success&&!result.reward)$('resultText').textContent=`Вся коллекция этого приключения уже у тебя! А ${world.currency} — награда за практику.`;
  $('resultStats').replaceChildren();for(const [v,t] of [[`+${result.stars}` ,world.unit[2]+' получено'],[`${result.solved}/${records.length}`,'решено примеров'],[records.filter(r=>r.first).length,'с первого раза']]){const d=el('div','result-stat');d.append(el('b','',v),el('span','',t));$('resultStats').append(d);}
- $('rewardBox').replaceChildren();$('rewardBox').hidden=!result.reward;if(result.reward){const a=result.reward;$('rewardBox').append(el('span','reward-label',worldId==='space'?'НОВЫЙ АРТЕФАКТ!':'НОВАЯ ПОРОДА В КОЛЛЕКЦИИ!'),itemImage(a,true),el('h2','',a.name),el('p','',a.story));}
+ $('rewardBox').replaceChildren();$('rewardBox').hidden=!result.reward;if(result.reward){const a=result.reward;$('rewardBox').append(el('span','reward-label',world.rewardTitle||(worldId==='space'?'НОВЫЙ АРТЕФАКТ!':'НОВАЯ ПОРОДА В КОЛЛЕКЦИИ!')),itemImage(a,true),el('h2','',a.name),el('p','',a.story));}
  $('newBadges').textContent=result.badges.map(b=>{const themed=themedBadges().find(d=>d.id===b.id);return `${themed.icon} Новый значок: ${themed.name}!`;}).join(' · ');
  $('review').replaceChildren();for(const r of records){const row=el('div','review-row');row.append(el('span','',`${r.skipped?'↻':'✓'} ${r.p.a} ${r.p.op} ${r.p.b} = ${r.p.answer}`),el('small','',r.skipped?'Попробуй ещё':r.first?'С первого раза':r.hinted?'С подсказкой':'Справился!'));$('review').append(row);}
  $('retry').hidden=!lastMistakes.length;view('result');if(result.solved)celebrate();
@@ -114,7 +114,7 @@ $('print').onclick=()=>{
 };
 applyWorld();updateProfile();view('home');
 
-function themedBadges(){return badgeDefs.map(b=>b.id==='first'?{...b,name:worldId==='space'?'Первый полёт':'Первое приключение'}:b.id==='collector'?{...b,name:worldId==='space'?'Хранитель сокровищ':'Вся команда в сборе!',description:worldId==='space'?'Собери все 36 артефактов':`Собери все ${artifacts.length} ${worldId==='dog'?'пород собак':'пород кошек'}`} : b);}
+function themedBadges(){return badgeDefs.map(b=>b.id==='first'?{...b,name:worldId==='space'?'Первый полёт':'Первое приключение'}:b.id==='collector'?{...b,name:worldId==='space'?'Хранитель сокровищ':'Вся команда в сборе!',description:worldId==='space'?'Собери все 36 артефактов':`Собери все ${artifacts.length} ${worldId==='football'?'карточек футболистов':worldId==='dog'?'пород собак':'пород кошек'}`} : b);}
 function itemImage(a,owned){const d=el('span','artifact-image'+(a.pet?' pet-image':''));if(owned&&a.pet)d.innerHTML=portrait(a);else d.textContent=owned?a.icon:'🔒';return d;}
 function token(){const t=el('span',worldId==='cat'?'sausage-token':'currency-token',worldId==='cat'?'':world.rewardIcon);t.setAttribute('aria-hidden','true');return t;}
 function setCurrency(target,n){target.replaceChildren(token(),el('span','',String(n)));}
@@ -122,14 +122,14 @@ function applyWorld(){
  document.body.dataset.world=worldId;
  $('clubName').textContent=world.club;$('walletIcon').replaceChildren(token());$('walletUnit').textContent=world.unit[2];
  $('welcomeText').textContent=world.welcome;$('heroTitle').textContent=world.hero;$('heroIntro').textContent=world.intro;$('goMission').textContent=world.cta+' →';
- $('missionHeading').textContent=world.section;$('missionNote').textContent=worldId==='space'?`${artifacts.length} сокровищ ждут тебя!`:`${artifacts.length} хвостатых друзей ждут тебя!`;$('bannerTitle').textContent=world.banner;$('bannerText').textContent=world.bannerText;$('collectionTitle').textContent=world.collectionTitle;$('collectionNote').textContent=world.collectionNote;
- $('freeIntro').textContent=`Плюс и минус вперемешку. За ответы получай ${world.currency}!`;$('freeCollectionNote').textContent=`${worldId==='space'?'Артефакты':'Породы'} можно открыть в приключениях.`;
+ $('missionHeading').textContent=world.section;$('missionNote').textContent=world.missionNote||(worldId==='space'?`${artifacts.length} сокровищ ждут тебя!`:`${artifacts.length} хвостатых друзей ждут тебя!`);$('bannerTitle').textContent=world.banner;$('bannerText').textContent=world.bannerText;$('collectionTitle').textContent=world.collectionTitle;$('collectionNote').textContent=world.collectionNote;
+ $('freeIntro').textContent=`Плюс и минус вперемешку. За ответы получай ${world.currency}!`;$('freeCollectionNote').textContent=`${world.collectionKind||(worldId==='space'?'Артефакты':'Породы')} можно открыть в приключениях.`;
  $('buddyName').textContent=`Я ${world.buddy}!`;$('hint').textContent=`💡 ${world.buddy}, помоги!`;$('spaceArt').hidden=worldId!=='space';$('petHero').hidden=worldId==='space';
  $('buddyFace').replaceChildren();$('petHero').replaceChildren();
  if(worldId==='space')$('buddyFace').textContent='🤖';else{
   const buddy=world.mascot||artifacts[0];$('buddyFace').innerHTML=portrait(buddy);
-  const bubble=el('span','pet-bubble',worldId==='dog'?'Я Лорри! Дай лапу!':'Мур! Дай пять!');const face=el('div','hero-pet-face');face.innerHTML=portrait(buddy);
-  const fun=el('span','pet-fun-token');fun.append(token());$('petHero').append(bubble,face,fun,el('span','pet-paw','🐾'),el('span','pet-math','＋ −'));
+  const bubble=el('span','pet-bubble',world.heroBubble||(worldId==='dog'?'Я Лорри! Дай лапу!':'Мур! Дай пять!'));const face=el('div','hero-pet-face');face.innerHTML=portrait(buddy);
+  const fun=el('span','pet-fun-token');fun.append(token());$('petHero').append(bubble,face,fun,el('span','pet-paw',worldId==='football'?'🏆':'🐾'),el('span','pet-math','＋ −'));
  }
  $('leave').textContent=`← К ${world.place}`;$('nextMission').textContent=`К ${world.place} →`;$('confirmLeave').textContent=`К ${world.place}`;$('celebration').replaceChildren(el('span','','🎉'),token(),el('span','','🎉'));
  for(const b of document.querySelectorAll('[data-world-choice]')){const selected=b.dataset.worldChoice===worldId;b.setAttribute('aria-pressed',String(selected));b.classList.toggle('selected',selected);}
