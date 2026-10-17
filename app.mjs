@@ -1,7 +1,7 @@
-import {makeProblems,hint} from './math.mjs?v=4';
-import {badgeDefs,cleanProfile,settle} from './game.mjs?v=4';
-import {worlds,getWorld,amount} from './worlds.mjs?v=4';
-import {portrait} from './portraits.mjs?v=4';
+import {makeProblems,hint} from './math.mjs?v=5';
+import {badgeDefs,cleanProfile,settle} from './game.mjs?v=5';
+import {worlds,getWorld,amount} from './worlds.mjs?v=5';
+import {portrait} from './portraits.mjs?v=5';
 const $=id=>document.getElementById(id);
 let worldId='space',world,missions,artifacts,profile,storageOK=true;
 const profiles={};
@@ -122,7 +122,7 @@ function applyWorld(){
  document.body.dataset.world=worldId;
  $('clubName').textContent=world.club;$('walletIcon').replaceChildren(token());$('walletUnit').textContent=world.unit[2];
  $('welcomeText').textContent=world.welcome;$('heroTitle').textContent=world.hero;$('heroIntro').textContent=world.intro;$('goMission').textContent=world.cta+' →';
- $('missionHeading').textContent=world.section;$('missionNote').textContent=worldId==='space'?'12 сокровищ ждут тебя!':`${artifacts.length} хвостатых друзей ждут тебя!`;$('bannerTitle').textContent=world.banner;$('bannerText').textContent=world.bannerText;$('collectionTitle').textContent=world.collectionTitle;$('collectionNote').textContent=world.collectionNote;
+ $('missionHeading').textContent=world.section;$('missionNote').textContent=worldId==='space'?`${artifacts.length} сокровищ ждут тебя!`:`${artifacts.length} хвостатых друзей ждут тебя!`;$('bannerTitle').textContent=world.banner;$('bannerText').textContent=world.bannerText;$('collectionTitle').textContent=world.collectionTitle;$('collectionNote').textContent=world.collectionNote;
  $('freeIntro').textContent=`Плюс и минус вперемешку. За ответы получай ${world.currency}!`;$('freeCollectionNote').textContent=`${worldId==='space'?'Артефакты':'Породы'} можно открыть в приключениях.`;
  $('buddyName').textContent=`Я ${world.buddy}!`;$('hint').textContent=`💡 ${world.buddy}, помоги!`;$('spaceArt').hidden=worldId!=='space';$('petHero').hidden=worldId==='space';
  $('buddyFace').replaceChildren();$('petHero').replaceChildren();

@@ -1,10 +1,10 @@
-import {getWorld} from './worlds.mjs?v=4';
-export {missions,artifacts} from './space.mjs?v=4';
+import {getWorld} from './worlds.mjs?v=5';
+export {missions,artifacts} from './space.mjs?v=5';
 export const badgeDefs=[
  {id:'first',icon:'🏅',name:'Первый полёт',description:'Заверши первую миссию',test:p=>p.completed>=1},
  {id:'streak',icon:'🔥',name:'На одной волне',description:'Реши 5 подряд с первого раза без подсказок',test:p=>p.bestStreak>=5},
  {id:'fifty',icon:'🌟',name:'Знаток чисел',description:'Реши 50 примеров',test:p=>p.solved>=50},
- {id:'collector',icon:'🏆',name:'Хранитель сокровищ',description:'Собери все 12 артефактов',test:p=>p.items.length===12}
+ {id:'collector',icon:'🏆',name:'Хранитель сокровищ',description:'Собери все артефакты',test:p=>p.items.length===36}
 ];
 export const emptyProfile=()=>({stars:0,solved:0,completed:0,bestStreak:0,items:[],badges:[]});
 export function cleanProfile(raw,worldId='space'){
