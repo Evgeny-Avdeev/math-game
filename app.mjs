@@ -1,4 +1,4 @@
-import {makeProblems,hint} from './math.mjs?v=13';
+import {makeProblems,hint} from './math.mjs?v=14';
 import {badgeDefs,cleanProfile,settle} from './game.mjs?v=8';
 import {worlds,getWorld,amount} from './worlds.mjs?v=8';
 import {portrait} from './portraits.mjs?v=8';
