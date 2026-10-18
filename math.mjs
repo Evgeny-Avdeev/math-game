@@ -25,8 +25,8 @@ export function hint(p){
     return `Представим ${b} = ${part} + ${rest}. Сначала прибавим ${part}: ${a} + ${part} = ${round}. Теперь прибавим то, что осталось: ${round} + ${rest} = ?`;
   }
   if(op==='−'&&au>0&&units>au){
-    const restUnits=units-au,round=a-au,mid=a-units;
-    return `Сначала вычтем единицы по частям: ${units} = ${au} + ${restUnits}. ${a} − ${au} = ${round}. Затем ${round} − ${restUnits} = ${mid}. Теперь десятки: ${mid} − ${tens} = ?`;
+    const first=tens+au,rest=units-au,round=a-first;
+    return `Представим ${b} = ${first} + ${rest}. Сначала вычтем ${first}: ${a} − ${first} = ${round}. Теперь вычтем то, что осталось: ${round} − ${rest} = ?`;
   }
   if(units===0)return `В числе ${b} только целые десятки. ${op==='+'?'Прибавь':'Вычти'} их: ${a} ${op} ${b} = ?`;
   const mid=op==='+'?a+units:a-units;
