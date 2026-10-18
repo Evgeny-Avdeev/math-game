@@ -1,4 +1,4 @@
-import {makeProblems,hint} from './math.mjs?v=12';
+import {makeProblems,hint} from './math.mjs?v=13';
 import {badgeDefs,cleanProfile,settle} from './game.mjs?v=8';
 import {worlds,getWorld,amount} from './worlds.mjs?v=8';
 import {portrait} from './portraits.mjs?v=8';
@@ -62,7 +62,7 @@ function show(){
  $('numA').textContent=p.a;$('numB').textContent=p.b;$('operator').textContent=p.op;
  const a=$('answer');a.value='';a.readOnly=false;a.className='answer';a.removeAttribute('aria-invalid');
  $('feedback').textContent='';$('feedback').className='feedback';$('submit').textContent='Проверить ✓';$('hintBox').hidden=true;$('hint').disabled=false;$('skip').hidden=false;
- $('buddyText').textContent=['Не спеши. Ты справишься!','Сначала единицы, потом десятки.','Если трудно — позови меня!'][index%3];
+ $('buddyText').textContent=['Не спеши. Ты справишься!','Прибавляй или вычитай по частям.','Если трудно — позови меня!'][index%3];
  $('streak').textContent=`🔥 ${streak} подряд`;$('dots').replaceChildren();
  for(let i=0;i<problems.length;i++){const d=el('span',`dot${i<index?(records[i].skipped?' skipped':' done'):i===index?' current':''}`);d.setAttribute('aria-label',`${i+1}: ${i<index?(records[i].skipped?'пропущен':'решён'):i===index?'сейчас':'впереди'}`);$('dots').append(d);}
 }
@@ -81,7 +81,7 @@ $('answerForm').addEventListener('submit',e=>{
 });
 function highFive(){return worldId==='dog'||worldId==='cat'?'Дай лапу! 🐾':'Дай пять! 🖐';}
 function feedback(text,bad=false){$('feedback').textContent=text;$('feedback').className='feedback'+(bad?' bad':'');}
-$('hint').onclick=()=>{hinted=true;streak=0;$('streak').textContent='🔥 0 подряд';$('hintBox').textContent=hint(problems[index]);$('hintBox').hidden=false;$('buddyText').textContent='Начнём с единиц, а потом посчитаем десятки!';};
+$('hint').onclick=()=>{hinted=true;streak=0;$('streak').textContent='🔥 0 подряд';$('hintBox').textContent=hint(problems[index]);$('hintBox').hidden=false;$('buddyText').textContent='Посчитаем по частям — так проще!';};
 $('skip').onclick=()=>{records.push({p:problems[index],first:false,attempts,hinted,skipped:true});streak=0;next();};
 $('answer').oninput=()=>{if(!checked){$('answer').className='answer';$('answer').removeAttribute('aria-invalid');$('feedback').textContent='';}};
 $('keypad').onclick=e=>{const b=e.target.closest('[data-key]');if(!b||checked)return;const a=$('answer'),k=b.dataset.key;if(k==='del')a.value=a.value.slice(0,-1);else if(k==='minus')a.value=a.value.startsWith('-')?a.value.slice(1):'-'+a.value;else if(a.value.length<4)a.value+=k;a.dispatchEvent(new Event('input'));};

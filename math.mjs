@@ -17,19 +17,18 @@ export function makeProblems(count, mode='mixed', level='all', negative=false, r
 }
 export function hint(p){
   const {a,b,op}=p;
-  // Optional negative-answer practice: subtract the smaller magnitude first.
   if(op==='−'&&a<b)return `Ответ будет отрицательным. Сначала найди ${b} − ${a}. ${hint({a:b,b:a,op:'−'})} Перед полученным ответом поставь минус.`;
-  const au=a%10,bu=b%10,at=Math.floor(a/10),bt=Math.floor(b/10);
-  if(op==='+'){
-    const units=au+bu,carry=units>=10?1:0;
-    const first=carry
-      ?`Единицы: ${au} + ${bu} = ${units}. Оставь ${units%10} в разряде единиц, а 1 десяток перенеси к десяткам.`
-      :`Сначала единицы: ${au} + ${bu} = ${units}.`;
-    const hundreds=at+bt+carry>=10?' Помни: 10 десятков — это 1 сотня.':'';
-    return `${first} Теперь десятки: ${at} + ${bt}${carry?' + 1 (перенос)':''} = ? Собери ответ из десятков и единиц.${hundreds}`;
+  const units=b%10,tens=b-units,au=a%10;
+  // When crossing a ten, first reach the nearest round number.
+  if(op==='+'&&au>0&&au+units>=10){
+    const part=10-au,rest=b-part,round=a+part;
+    return `Представим ${b} = ${part} + ${rest}. Сначала прибавим ${part}: ${a} + ${part} = ${round}. Теперь прибавим то, что осталось: ${round} + ${rest} = ?`;
   }
-  if(au<bu){
-    return `В разряде единиц ${au} меньше ${bu}. Займи 1 десяток: останется ${at-1} в разряде десятков, а единиц станет ${au+10}. Единицы: ${au+10} − ${bu} = ${au+10-bu}. Теперь десятки: ${at-1} − ${bt} = ? Собери ответ из десятков и единиц.`;
+  if(op==='−'&&au>0&&units>au){
+    const rest=b-au,round=a-au;
+    return `Представим ${b} = ${au} + ${rest}. Сначала вычтем ${au}: ${a} − ${au} = ${round}. Теперь вычтем то, что осталось: ${round} − ${rest} = ?`;
   }
-  return `Сначала единицы: ${au} − ${bu} = ${au-bu}. Теперь десятки: ${at} − ${bt} = ? Собери ответ из десятков и единиц.`;
+  if(units===0)return `В числе ${b} только целые десятки. ${op==='+'?'Прибавь':'Вычти'} их: ${a} ${op} ${b} = ?`;
+  const mid=op==='+'?a+units:a-units;
+  return `Сначала ${op==='+'?'прибавь':'вычти'} единицы: ${a} ${op} ${units} = ${mid}. Теперь десятки: ${mid} ${op} ${tens} = ?`;
 }
