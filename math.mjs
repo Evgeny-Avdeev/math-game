@@ -16,7 +16,20 @@ export function makeProblems(count, mode='mixed', level='all', negative=false, r
   return result;
 }
 export function hint(p){
-  const tens=Math.floor(p.b/10)*10,units=p.b%10;
-  const mid=p.op==='+'?p.a+tens:p.a-tens;
-  return `${p.b} = ${tens} + ${units}. Сначала ${p.a} ${p.op} ${tens} = ${mid}. Теперь ${mid} ${p.op} ${units} = ?`;
+  const {a,b,op}=p;
+  // Optional negative-answer practice: subtract the smaller magnitude first.
+  if(op==='−'&&a<b)return `Ответ будет отрицательным. Сначала найди ${b} − ${a}. ${hint({a:b,b:a,op:'−'})} Перед полученным ответом поставь минус.`;
+  const au=a%10,bu=b%10,at=Math.floor(a/10),bt=Math.floor(b/10);
+  if(op==='+'){
+    const units=au+bu,carry=units>=10?1:0;
+    const first=carry
+      ?`Единицы: ${au} + ${bu} = ${units}. Оставь ${units%10} в разряде единиц, а 1 десяток перенеси к десяткам.`
+      :`Сначала единицы: ${au} + ${bu} = ${units}.`;
+    const hundreds=at+bt+carry>=10?' Помни: 10 десятков — это 1 сотня.':'';
+    return `${first} Теперь десятки: ${at} + ${bt}${carry?' + 1 (перенос)':''} = ? Собери ответ из десятков и единиц.${hundreds}`;
+  }
+  if(au<bu){
+    return `В разряде единиц ${au} меньше ${bu}. Займи 1 десяток: останется ${at-1} в разряде десятков, а единиц станет ${au+10}. Единицы: ${au+10} − ${bu} = ${au+10-bu}. Теперь десятки: ${at-1} − ${bt} = ? Собери ответ из десятков и единиц.`;
+  }
+  return `Сначала единицы: ${au} − ${bu} = ${au-bu}. Теперь десятки: ${at} − ${bt} = ? Собери ответ из десятков и единиц.`;
 }
