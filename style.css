@@ -28,3 +28,5 @@ body[data-world=football] .mission-pet{width:140px;height:160px;padding-top:4px}
 body[data-world=football] .mission-pet svg{height:100%;width:100%}
 /* Keep each mission's action at the bottom of its grid row. */
 .mission{display:flex;flex-direction:column}.mission-art{flex-shrink:0}.mission-body{display:flex;flex-direction:column;flex:1}.mission-meta{margin-top:auto}.mission-body>button{flex-shrink:0}
+
+.single-paw{display:inline-block;width:1.05em;height:1.05em;vertical-align:-.15em;margin-left:.22em}.single-paw svg{display:block;width:100%;height:100%}
