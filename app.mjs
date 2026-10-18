@@ -76,9 +76,10 @@ $('answerForm').addEventListener('submit',e=>{
   records.push({p,first,attempts,hinted,skipped:false});checked=true;$('answer').readOnly=true;$('answer').className='answer correct';$('answer').removeAttribute('aria-invalid');
   feedback(first?`${['Ура! Всё верно!','Вот это да!','Отличный ответ!'][index%3]} +${amount(3,world)} 🎉`:`Получилось! +${amount(1,world)} за старание 💛`);
   $('submit').textContent=index===problems.length-1?'Забрать награды! 🎉':'Ещё пример →';$('skip').hidden=true;$('hint').disabled=true;$('streak').textContent=`🔥 ${streak} подряд`;setCurrency($('sessionStars'),earned);
-  $('buddyText').textContent=streak>=5?'Пять подряд и больше! Дай пять! 🖐':'Я знал, что у тебя получится!';
+  $('buddyText').textContent=streak>=5?`Пять подряд и больше! ${highFive()}`:'Я знал, что у тебя получится!';
  }else{attempts++;streak=0;$('streak').textContent='🔥 0 подряд';$('answer').className='answer wrong';$('answer').setAttribute('aria-invalid','true');feedback(`Почти! Попробуй ещё или позови на помощь 💡`,true);$('buddyText').textContent='Ошибки помогают учиться. Давай попробуем вместе!';$('answer').focus();$('answer').select();}
 });
+function highFive(){return worldId==='dog'||worldId==='cat'?'Дай лапу! 🐾':'Дай пять! 🖐';}
 function feedback(text,bad=false){$('feedback').textContent=text;$('feedback').className='feedback'+(bad?' bad':'');}
 $('hint').onclick=()=>{hinted=true;streak=0;$('streak').textContent='🔥 0 подряд';$('hintBox').textContent=hint(problems[index]);$('hintBox').hidden=false;$('buddyText').textContent='Разобьём большое число на две маленькие задачи!';};
 $('skip').onclick=()=>{records.push({p:problems[index],first:false,attempts,hinted,skipped:true});streak=0;next();};
@@ -89,7 +90,7 @@ function finish(){
  const result=settle(profile,records,missionId,bestStreak,worldId);profile=result.profile;save();
  lastMistakes=records.filter(r=>!r.first).map(r=>r.p);
  $('resultTitle').textContent=result.success?'Миссия выполнена!':result.solved===0?'Первый шаг сделан!':'Ты отлично потрудился!';
- $('resultText').textContent=result.success?(worldId==='space'?'Космос стал понятнее, а коллекция — богаче!':(world.successText||'В твоей команде появился новый хвостатый друг!')):missionId?`Для награды нужно решить хотя бы ${Math.ceil(problems.length*.8)} из ${problems.length} примеров. Попробуй ещё: ${world.buddy} поможет!`:'Каждый решённый пример делает тебя увереннее. Дай пять! 🖐';
+ $('resultText').textContent=result.success?(worldId==='space'?'Космос стал понятнее, а коллекция — богаче!':(world.successText||'В твоей команде появился новый хвостатый друг!')):missionId?`Для награды нужно решить хотя бы ${Math.ceil(problems.length*.8)} из ${problems.length} примеров. Попробуй ещё: ${world.buddy} поможет!`:`Каждый решённый пример делает тебя увереннее. ${highFive()}`;
  if(result.success&&!result.reward)$('resultText').textContent=`Вся коллекция этого приключения уже у тебя! А ${world.currency} — награда за практику.`;
  $('resultStats').replaceChildren();for(const [v,t] of [[`+${result.stars}` ,world.unit[2]+' получено'],[`${result.solved}/${records.length}`,'решено примеров'],[records.filter(r=>r.first).length,'с первого раза']]){const d=el('div','result-stat');d.append(el('b','',v),el('span','',t));$('resultStats').append(d);}
  $('rewardBox').replaceChildren();$('rewardBox').hidden=!result.reward;if(result.reward){const a=result.reward;$('rewardBox').append(el('span','reward-label',world.rewardTitle||(worldId==='space'?'НОВЫЙ АРТЕФАКТ!':'НОВАЯ ПОРОДА В КОЛЛЕКЦИИ!')),itemImage(a,true),el('h2','',a.name),el('p','',a.story));}
@@ -134,7 +135,7 @@ function applyWorld(){
  $('buddyFace').replaceChildren();$('petHero').replaceChildren();
  if(worldId==='space')$('buddyFace').textContent='🤖';else{
   const buddy=world.mascot||artifacts[0];$('buddyFace').innerHTML=portrait(buddy);
-  const bubble=el('span','pet-bubble',world.heroBubble||(worldId==='dog'?'Я Лорри! Дай лапу!':'Мур! Дай пять!'));const face=el('div','hero-pet-face');face.innerHTML=portrait(buddy);
+  const bubble=el('span','pet-bubble',world.heroBubble||(worldId==='dog'?'Я Лорри! Дай лапу!':'Мур! Дай лапу! 🐾'));const face=el('div','hero-pet-face');face.innerHTML=portrait(buddy);
   const fun=el('span','pet-fun-token');fun.append(token());$('petHero').append(bubble,face,fun,el('span','pet-paw',worldId==='football'?'🏆':'🐾'),el('span','pet-math','＋ −'));
  }
  $('leave').textContent=`← К ${world.place}`;$('nextMission').textContent=`К ${world.place} →`;$('confirmLeave').textContent=`К ${world.place}`;$('celebration').replaceChildren(el('span','','🎉'),token(),el('span','','🎉'));
