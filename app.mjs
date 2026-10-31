@@ -1,5 +1,7 @@
+const analyticsModule=import('./analytics.mjs?v=1').catch(()=>null);
+function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).catch(()=>{});}
 import {puzzleSize} from './tents-sequence.mjs?v=1';
-import {mountTents} from './tents-ui.mjs?v=9';
+import {mountTents} from './tents-ui.mjs?v=10';
 import {makeProblems,hint} from './math.mjs?v=15';
 import {badgeDefs,cleanProfile,settle,settlePuzzle} from './game.mjs?v=9';
 import {worlds,getWorld,amount} from './worlds.mjs?v=8';
@@ -13,6 +15,7 @@ try{const selected=localStorage.getItem('schitay-world-v1');if(worlds[selected])
 for(const id of Object.keys(worlds)){try{profiles[id]=cleanProfile(JSON.parse(localStorage.getItem(`schitay-${id}-v1`)||'null'),id);}catch{profiles[id]=cleanProfile(null,id);storageOK=false;}}
 function bindWorld(){world=getWorld(worldId);missions=world.missions;artifacts=world.artifacts;profile=profiles[worldId];if(!selectedSets[worldId])try{selectedSets[worldId]=localStorage.getItem(`schitay-goal-${worldId}-v1`);}catch{storageOK=false;}}
 bindWorld();
+track('page_view',{world:worldId});
 let problems=[],records=[],index=0,streak=0,bestStreak=0,attempts=0,hinted=false,checked=false,active=false,missionId=null,origin='home',earned=0,lastMistakes=[];
 function save(){profiles[worldId]=profile;try{localStorage.setItem(`schitay-${worldId}-v1`,JSON.stringify(profile));}catch{storageOK=false;}updateProfile();}
 function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e;}
@@ -58,6 +61,7 @@ function openArtifact(a,owned,m){const box=$('artifactDetail');box.replaceChildr
 $('closeArtifact').onclick=()=>$('artifactDialog').close();
 function startMission(id){const m=missions.find(m=>m.id===id);missionId=id;origin='home';start(makeProblems(m.count,'mixed',m.level),m.title,`Собираем набор «${m.set}». Реши ${Math.ceil(m.count*.8)} из ${m.count} примеров · + и − и получи ${world.collectibleAcc}. Подсказки разрешены!`);}
 function start(list,title,goal){
+ track('game_start',{world:worldId,game:'math'});
  problems=list;records=[];index=streak=bestStreak=earned=0;active=true;$('playTitle').textContent=title;$('goalText').textContent=goal;setCurrency($('sessionStars'),0);view('play');show();
 }
 function show(){
@@ -99,6 +103,7 @@ $('answer').oninput=()=>{if(!checked){$('answer').className='answer';$('answer')
 $('keypad').onclick=e=>{const b=e.target.closest('[data-key]');if(!b||checked)return;const a=$('answer'),k=b.dataset.key;if(k==='del')a.value=a.value.slice(0,-1);else if(k==='minus')a.value=a.value.startsWith('-')?a.value.slice(1):'-'+a.value;else if(a.value.length<4)a.value+=k;a.dispatchEvent(new Event('input'));};
 function finish(){
  if(!active)return;active=false;
+ track('game_complete',{world:worldId,game:'math',solved:records.filter(r=>!r.skipped).length});
  const result=settle(profile,records,missionId,bestStreak,worldId);profile=result.profile;save();
  lastMistakes=records.filter(r=>!r.first).map(r=>r.p);
  $('resultTitle').textContent=result.success?'Миссия выполнена!':result.solved===0?'Первый шаг сделан!':'Ты отлично потрудился!';
@@ -155,7 +160,7 @@ function applyWorld(){
  for(const b of document.querySelectorAll('[data-world-choice]')){const selected=b.dataset.worldChoice===worldId;b.setAttribute('aria-pressed',String(selected));b.classList.toggle('selected',selected);}
  document.title=`Считай легко · ${world.name}`;
 }
-function switchWorld(id){if(!worlds[id])return;if(active){pendingWorld=id;pendingView='home';$('leaveDialog').showModal();return;}worldId=id;bindWorld();try{localStorage.setItem('schitay-world-v1',id);}catch{storageOK=false;}applyWorld();updateProfile();view('home');}
+function switchWorld(id){if(!worlds[id])return;if(active){pendingWorld=id;pendingView='home';$('leaveDialog').showModal();return;}worldId=id;bindWorld();track('world_select',{world:worldId});try{localStorage.setItem('schitay-world-v1',id);}catch{storageOK=false;}applyWorld();updateProfile();view('home');}
 let pendingWorld=null;
 for(const b of document.querySelectorAll('[data-world-choice]'))b.onclick=()=>switchWorld(b.dataset.worldChoice);
 
