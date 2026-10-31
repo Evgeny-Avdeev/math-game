@@ -1,5 +1,5 @@
 import {puzzleSize} from './tents-sequence.mjs?v=1';
-import {mountTents} from './tents-ui.mjs?v=8';
+import {mountTents} from './tents-ui.mjs?v=9';
 import {makeProblems,hint} from './math.mjs?v=15';
 import {badgeDefs,cleanProfile,settle,settlePuzzle} from './game.mjs?v=9';
 import {worlds,getWorld,amount} from './worlds.mjs?v=8';

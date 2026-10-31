@@ -62,3 +62,5 @@ nav{flex-wrap:wrap;gap:5px}.nav{font-size:14px}.forest-invite{display:flex;align
 .forest-cell,.forest-cell.grass{min-height:0;min-width:0;line-height:1;overflow:hidden;font-size:clamp(12px,calc((100cqw - 52px)/var(--n)*.68),34px);align-self:start}
 /* Puzzle tiles stay anchored, including sticky hover and active states on touch. */
 .forest-cell,.forest-cell:hover,.forest-cell:active,.forest-cell:focus,.forest-cell:focus-visible{transform:none;transition:none;animation:none}
+
+.forest-remaining>div{min-width:0;flex-wrap:wrap;gap:6px 12px}.forest-remaining>div>span{flex:1;min-width:90px}.forest-remaining strong{white-space:nowrap}.forest-total{font-size:.55em;font-weight:800}
