@@ -1,4 +1,5 @@
-import {mountTents} from './tents-ui.mjs?v=2';
+import {puzzleSize} from './tents-sequence.mjs?v=1';
+import {mountTents} from './tents-ui.mjs?v=3';
 import {makeProblems,hint} from './math.mjs?v=15';
 import {badgeDefs,cleanProfile,settle,settlePuzzle} from './game.mjs?v=9';
 import {worlds,getWorld,amount} from './worlds.mjs?v=8';
@@ -174,6 +175,7 @@ function renderActivity(){
  $('activitySet').replaceChildren(...missions.map(set=>new Option(set.set,set.id)));$('activitySet').value=m.id;
  const items=artifacts.filter(a=>a.mission===m.id),owned=items.filter(a=>profile.items.includes(a.id)).length;
  $('activityProgress').textContent=`${m.set} · ${owned} из ${items.length} в коллекции`;
+ const size=puzzleSize(missions,m.id);$('tentsActivityGoal').textContent=`Поле ${size} × ${size} · собери один лагерь — получи следующую карточку`;
  $('mathActivityGoal').textContent=`Реши ${Math.ceil(m.count*.8)} из ${m.count} примеров — получи следующую карточку`;
  $('activityTitle').textContent=owned===items.length?'Набор собран! Продолжим играть?':'Как получим следующую карточку?';
 }
