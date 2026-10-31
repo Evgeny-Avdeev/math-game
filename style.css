@@ -57,3 +57,6 @@ nav{flex-wrap:wrap;gap:5px}.nav{font-size:14px}.forest-invite{display:flex;align
 }
 @media(max-width:359px){.forest-actions{grid-template-columns:minmax(0,1fr)}.forest-actions>button{grid-column:1}}
 @media(hover:none){.forest-actions>button:hover,.result-actions>button:hover,.forest-win>button:hover{transform:none}}
+/* Cell contents must never determine the height of a dense puzzle row. */
+.forest-board{container-type:inline-size}
+.forest-cell,.forest-cell.grass{min-height:0;min-width:0;line-height:1;overflow:hidden;font-size:clamp(12px,calc((100cqw - 52px)/var(--n)*.68),34px);align-self:start}
