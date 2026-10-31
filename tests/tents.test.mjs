@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {puzzles} from '../tents-data.mjs';
+import {solve,inspect,paired} from '../tents-engine.mjs';
+import {cleanProfile,settlePuzzle,settle} from '../game.mjs';
+import {getWorld} from '../worlds.mjs';
+test('72 boards each have exactly one valid solution',()=>{assert.equal(puzzles.length,72);assert.equal(new Set(puzzles.map(p=>p.id)).size,72);for(const p of puzzles){const solutions=solve(p);assert.equal(solutions.length,1,p.id);assert.deepEqual([...solutions[0]].sort((a,b)=>a-b),p.solution,p.id);assert.ok(inspect(p,Array.from({length:p.n*p.n},(_,i)=>p.solution.includes(i)?1:0)).solved,p.id);}});
+test('one-to-one pairing rejects two tents competing for the same tree',()=>{assert.equal(paired([1,3],[0,8],3),false);assert.equal(paired([1,7],[0,8],3),true);});
+test('touching tents and wrong counts fail, grass is optional',()=>{const p={n:3,trees:[0,8],rows:[1,0,1],cols:[0,2,0]};assert.equal(inspect(p,[0,1,0,0,0,0,0,1,0]).solved,true);assert.equal(inspect(p,[0,1,0,0,1,0,0,0,0]).solved,false);assert.equal(inspect(p,Array(9).fill(0)).solved,false);});
+test('old profiles survive and puzzle reward is once per world',()=>{for(const world of ['space','dog','cat','football']){const w=getWorld(world),old={stars:34,solved:17,completed:2,bestStreak:6,items:[w.artifacts[0].id],badges:[]},p=cleanProfile(old,world),m=w.missions[0];assert.equal(p.solved,17);const result=settlePuzzle(p,puzzles[0].id,m.id,world);assert.equal(result.profile.stars,44);assert.equal(result.profile.solved,17);assert.equal(result.profile.items.length,2);const repeat=settlePuzzle(result.profile,puzzles[0].id,w.missions[1].id,world);assert.equal(repeat.already,true);assert.equal(repeat.profile.stars,44);assert.equal(repeat.profile.items.length,2);const cleaned=cleanProfile(result.profile,world);assert.deepEqual(cleaned.puzzles,[puzzles[0].id]);const math=settle(cleaned,[],null,0,world);assert.deepEqual(math.profile.puzzles,cleaned.puzzles);}});
+test('full set gives currency without duplicate card',()=>{const w=getWorld('dog'),m=w.missions[0],p=cleanProfile({items:w.artifacts.filter(a=>a.mission===m.id).map(a=>a.id)},'dog'),r=settlePuzzle(p,puzzles[1].id,m.id,'dog');assert.equal(r.reward,null);assert.equal(r.profile.items.length,p.items.length);assert.equal(r.profile.stars,10);});

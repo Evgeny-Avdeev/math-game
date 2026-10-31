@@ -14,12 +14,13 @@ export const badgeDefs=[
  {id:'eighteencards',icon:'💝',name:'Половина сокровищницы',description:'Собери 18 наград в коллекции',test:p=>p.items.length>=18},
  {id:'collector',icon:'🏆',name:'Хранитель сокровищ',description:'Собери все артефакты',test:p=>p.items.length===36}
 ];
-export const emptyProfile=()=>({stars:0,solved:0,completed:0,bestStreak:0,items:[],badges:[]});
+export const emptyProfile=()=>({stars:0,solved:0,completed:0,bestStreak:0,items:[],badges:[],puzzles:[]});
 export function cleanProfile(raw,worldId='space'){
  const {artifacts}=getWorld(worldId);
  const p=emptyProfile();
  if(!raw||typeof raw!=='object')return p;
  for(const k of ['stars','solved','completed','bestStreak'])if(Number.isSafeInteger(raw[k])&&raw[k]>=0)p[k]=raw[k];
+ p.puzzles=[...new Set(Array.isArray(raw.puzzles)?raw.puzzles:[])].filter(id=>typeof id==='string'&&/^forest-(5|6|8)-([1-9]|1[0-9]|2[0-4])$/.test(id));
  p.items=[...new Set(Array.isArray(raw.items)?raw.items:[])].filter(id=>artifacts.some(a=>a.id===id));
  p.badges=[...new Set(Array.isArray(raw.badges)?raw.badges:[])].filter(id=>badgeDefs.some(a=>a.id===id));
  // Credit existing progress when new achievements become available.
@@ -38,4 +39,15 @@ export function settle(profile,records,missionId,bestStreak,worldId='space'){
  const stars=earned+(success?10:0);p.stars+=stars;
  const badges=badgeDefs.filter(b=>!p.badges.includes(b.id)&&(b.id==='collector'?p.items.length===artifacts.length:b.test(p)));p.badges.push(...badges.map(b=>b.id));
  return {profile:p,stars,solved,reward,badges,success};
+}
+
+export function settlePuzzle(profile,puzzleId,missionId,worldId='space'){
+ const p=cleanProfile(profile,worldId),{missions,artifacts}=getWorld(worldId);
+ if(!/^forest-(5|6|8)-([1-9]|1[0-9]|2[0-4])$/.test(puzzleId)||!missions.some(m=>m.id===missionId))throw new Error('Unknown puzzle or collection');
+ if(p.puzzles.includes(puzzleId))return {profile:p,already:true,reward:null};
+ p.puzzles.push(puzzleId);p.stars+=10;p.completed++;
+ const reward=artifacts.find(a=>a.mission===missionId&&!p.items.includes(a.id))||null;
+ if(reward)p.items.push(reward.id);
+ for(const b of badgeDefs)if(!p.badges.includes(b.id)&&(b.id==='collector'?p.items.length===artifacts.length:b.test(p)))p.badges.push(b.id);
+ return {profile:p,already:false,reward};
 }

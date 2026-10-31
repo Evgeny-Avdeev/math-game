@@ -1,9 +1,11 @@
+import {mountTents} from './tents-ui.mjs?v=1';
 import {makeProblems,hint} from './math.mjs?v=15';
-import {badgeDefs,cleanProfile,settle} from './game.mjs?v=8';
+import {badgeDefs,cleanProfile,settle,settlePuzzle} from './game.mjs?v=9';
 import {worlds,getWorld,amount} from './worlds.mjs?v=8';
 import {portrait} from './portraits.mjs?v=8';
 const $=id=>document.getElementById(id);
 let worldId='space',world,missions,artifacts,profile,storageOK=true;
+let puzzleUI;
 const profiles={};
 try{const selected=localStorage.getItem('schitay-world-v1');if(worlds[selected])worldId=selected;}catch{storageOK=false;}
 for(const id of Object.keys(worlds)){try{profiles[id]=cleanProfile(JSON.parse(localStorage.getItem(`schitay-${id}-v1`)||'null'),id);}catch{profiles[id]=cleanProfile(null,id);storageOK=false;}}
@@ -13,7 +15,7 @@ let problems=[],records=[],index=0,streak=0,bestStreak=0,attempts=0,hinted=false
 function save(){profiles[worldId]=profile;try{localStorage.setItem(`schitay-${worldId}-v1`,JSON.stringify(profile));}catch{storageOK=false;}updateProfile();}
 function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e;}
 function theme(e,m){e.style.setProperty('--accent',m.accent);e.style.setProperty('--tint',m.tint);}
-function view(id){for(const e of document.querySelectorAll('.view'))e.hidden=e.id!==id;for(const b of document.querySelectorAll('nav [data-view]')){b.classList.toggle('active',b.dataset.view===id);b.setAttribute('aria-current',b.dataset.view===id?'page':'false');}window.scrollTo({top:0,behavior:'instant'});}
+function view(id){if(id==='tents')puzzleUI?.enter();for(const e of document.querySelectorAll('.view'))e.hidden=e.id!==id;for(const b of document.querySelectorAll('nav [data-view]')){b.classList.toggle('active',b.dataset.view===id);b.setAttribute('aria-current',b.dataset.view===id?'page':'false');}window.scrollTo({top:0,behavior:'instant'});}
 function updateProfile(){
  $('wallet').textContent=profile.stars;$('collectionCount').textContent=`${profile.items.length}/${artifacts.length}`;$('collectionTotal').textContent=`${profile.items.length} / ${artifacts.length}`;
  const level=Math.floor(profile.stars/50)+1;
@@ -42,7 +44,7 @@ function renderCollection(){
   const grid=el('div','artifacts');
   for(const [i,a] of artifacts.filter(a=>a.mission===m.id).entries()){
    const owned=profile.items.includes(a.id);const b=el('button',`artifact${owned?'':' locked'}`);
-   b.append(itemImage(a,owned),el('b','',owned?a.name:`${world.secret} ${i+1}`),el('small','',owned?'Нажми: узнаешь историю':`Пройди эту миссию ${i+1} ${i===0?'раз':i<4?'раза':'раз'}`));
+   b.append(itemImage(a,owned),el('b','',owned?a.name:`${world.secret} ${i+1}`),el('small','',owned?'Нажми: узнаешь историю':'Примеры или головоломка'));
    b.onclick=()=>openArtifact(a,owned,m);grid.append(b);
   }
   set.append(head,grid);$('sets').append(set);
@@ -50,7 +52,7 @@ function renderCollection(){
  $('badges').replaceChildren();
  for(const b of themedBadges()){const owned=profile.badges.includes(b.id);const card=el('div',`badge${owned?'':' locked'}`);card.append(el('span','',owned?b.icon:'🔒'),el('b','',b.name),el('p','',owned?'Получено! '+b.description:b.description));$('badges').append(card);}
 }
-function openArtifact(a,owned,m){const box=$('artifactDetail');box.replaceChildren();box.append(itemImage(a,owned),el('span','eyebrow',m.title),el('h2','',owned?a.name:worldId==='space'?'Здесь будет сокровище':'Здесь будет новый друг!'),el('p','',owned?a.story:`Выполняй это приключение: за каждую удачную игру ты откроешь ${world.collectibleAcc}. Подсказками пользоваться можно!`));$('artifactDialog').showModal();}
+function openArtifact(a,owned,m){const box=$('artifactDetail');box.replaceChildren();box.append(itemImage(a,owned),el('span','eyebrow',m.title),el('h2','',owned?a.name:worldId==='space'?'Здесь будет сокровище':'Здесь будет новый друг!'),el('p','',owned?a.story:`Выполняй это приключение: за каждую удачную игру ты откроешь ${world.collectibleAcc}. Или реши головоломку «Деревья и палатки» для этого набора. Подсказками пользоваться можно!`));$('artifactDialog').showModal();}
 $('closeArtifact').onclick=()=>$('artifactDialog').close();
 function startMission(id){const m=missions.find(m=>m.id===id);missionId=id;origin='home';start(makeProblems(m.count,'mixed',m.level),m.title,`Реши ${Math.ceil(m.count*.8)} из ${m.count} примеров · + и − и получи ${world.collectibleAcc}. Подсказки разрешены!`);}
 function start(list,title,goal){
@@ -154,3 +156,10 @@ function applyWorld(){
 function switchWorld(id){if(!worlds[id])return;if(active){pendingWorld=id;pendingView='home';$('leaveDialog').showModal();return;}worldId=id;bindWorld();try{localStorage.setItem('schitay-world-v1',id);}catch{storageOK=false;}applyWorld();updateProfile();view('home');}
 let pendingWorld=null;
 for(const b of document.querySelectorAll('[data-world-choice]'))b.onclick=()=>switchWorld(b.dataset.worldChoice);
+
+puzzleUI=mountTents($('tents'),{
+ context:()=>({id:worldId,world,missions,profile}),
+ reward:(id,set)=>{const result=settlePuzzle(profile,id,set,worldId);profile=result.profile;save();if(!result.already)celebrate();return {...result,image:result.reward?itemImage(result.reward,true):null};},
+ openCollection:()=>requestView('collection')
+});
+if(location.hash==='#tents')view('tents');
