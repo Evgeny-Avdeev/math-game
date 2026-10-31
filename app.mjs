@@ -1,4 +1,4 @@
-import {mountTents} from './tents-ui.mjs?v=1';
+import {mountTents} from './tents-ui.mjs?v=2';
 import {makeProblems,hint} from './math.mjs?v=15';
 import {badgeDefs,cleanProfile,settle,settlePuzzle} from './game.mjs?v=9';
 import {worlds,getWorld,amount} from './worlds.mjs?v=8';
@@ -6,16 +6,17 @@ import {portrait} from './portraits.mjs?v=8';
 const $=id=>document.getElementById(id);
 let worldId='space',world,missions,artifacts,profile,storageOK=true;
 let puzzleUI;
+const selectedSets={};
 const profiles={};
 try{const selected=localStorage.getItem('schitay-world-v1');if(worlds[selected])worldId=selected;}catch{storageOK=false;}
 for(const id of Object.keys(worlds)){try{profiles[id]=cleanProfile(JSON.parse(localStorage.getItem(`schitay-${id}-v1`)||'null'),id);}catch{profiles[id]=cleanProfile(null,id);storageOK=false;}}
-function bindWorld(){world=getWorld(worldId);missions=world.missions;artifacts=world.artifacts;profile=profiles[worldId];}
+function bindWorld(){world=getWorld(worldId);missions=world.missions;artifacts=world.artifacts;profile=profiles[worldId];if(!selectedSets[worldId])try{selectedSets[worldId]=localStorage.getItem(`schitay-goal-${worldId}-v1`);}catch{storageOK=false;}}
 bindWorld();
 let problems=[],records=[],index=0,streak=0,bestStreak=0,attempts=0,hinted=false,checked=false,active=false,missionId=null,origin='home',earned=0,lastMistakes=[];
 function save(){profiles[worldId]=profile;try{localStorage.setItem(`schitay-${worldId}-v1`,JSON.stringify(profile));}catch{storageOK=false;}updateProfile();}
 function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e;}
 function theme(e,m){e.style.setProperty('--accent',m.accent);e.style.setProperty('--tint',m.tint);}
-function view(id){if(id==='tents')puzzleUI?.enter();for(const e of document.querySelectorAll('.view'))e.hidden=e.id!==id;for(const b of document.querySelectorAll('nav [data-view]')){b.classList.toggle('active',b.dataset.view===id);b.setAttribute('aria-current',b.dataset.view===id?'page':'false');}window.scrollTo({top:0,behavior:'instant'});}
+function view(id){if(id==='tents')puzzleUI?.enter();for(const e of document.querySelectorAll('.view'))e.hidden=e.id!==id;for(const b of document.querySelectorAll('nav [data-view]')){b.classList.toggle('active',b.dataset.view===(['tents','play','result'].includes(id)?'home':id));b.setAttribute('aria-current',b.dataset.view===(['tents','play','result'].includes(id)?'home':id)?'page':'false');}window.scrollTo({top:0,behavior:'instant'});}
 function updateProfile(){
  $('wallet').textContent=profile.stars;$('collectionCount').textContent=`${profile.items.length}/${artifacts.length}`;$('collectionTotal').textContent=`${profile.items.length} / ${artifacts.length}`;
  const level=Math.floor(profile.stars/50)+1;
@@ -23,7 +24,7 @@ function updateProfile(){
  $('levelInfo').textContent=`Уровень ${level} · ${profile.stars%50} из 50 ${world.unit[2]} до следующего`;$('levelProgress').style.width=`${profile.stars%50*2}%`;
  $('totalSolved').textContent=profile.solved;$('totalMissions').textContent=profile.completed;
  $('storageNote').textContent=storageOK?'Коллекция сохраняется в этом браузере на этом устройстве.':'Браузер не разрешил сохранение. Коллекция доступна, пока открыта эта страница.';
- renderMissions();renderCollection();
+ renderMissions();renderCollection();renderActivity();
 }
 function renderMissions(){
  $('missions').replaceChildren();
@@ -32,9 +33,9 @@ function renderMissions(){
   const card=el('article','mission');theme(card,m);
   const art=el('div','mission-art');if(worldId==='space')art.append(el('div','planet',m.symbol));else{const pic=el('div','mission-pet');pic.innerHTML=portrait(artifacts.find(a=>a.mission===m.id));art.append(pic,el('span','math-sticker',m.symbol));}art.setAttribute('aria-hidden','true');
   if(n===total)art.append(el('span','mission-complete','Коллекция собрана ✓'));
-  const body=el('div','mission-body');body.append(el('span','mission-num',`МИССИЯ 0${i+1}`),el('h3','',m.title),el('p','',m.subtitle));
-  const meta=el('div','mission-meta');meta.append(el('span','',`${m.count} примеров · + и −`),el('span','',`${world.collectionIcon} ${n}/${total} · +10 ${world.unit[2]}`));
-  const b=el('button','',n===total?world.againAction:world.missionAction);b.onclick=()=>startMission(m.id);body.append(meta,b);card.append(art,body);$('missions').append(card);
+  const body=el('div','mission-body');body.append(el('span','mission-num',`МИССИЯ 0${i+1}`),el('h3','',m.title),el('p','','Собирай этот набор: решай примеры или головоломки.'));
+  const meta=el('div','mission-meta');meta.append(el('span','','Примеры или палатки'),el('span','',`${world.collectionIcon} ${n}/${total} · +10 ${world.unit[2]}`));
+  const b=el('button','',n===total?'Набор собран ✓':'Выбрать набор →');b.onclick=()=>{selectedSets[worldId]=m.id;renderActivity();$('activityHub').scrollIntoView({behavior:'smooth',block:'start'});};body.append(meta,b);card.append(art,body);$('missions').append(card);
  }
 }
 function renderCollection(){
@@ -54,7 +55,7 @@ function renderCollection(){
 }
 function openArtifact(a,owned,m){const box=$('artifactDetail');box.replaceChildren();box.append(itemImage(a,owned),el('span','eyebrow',m.title),el('h2','',owned?a.name:worldId==='space'?'Здесь будет сокровище':'Здесь будет новый друг!'),el('p','',owned?a.story:`Выполняй это приключение: за каждую удачную игру ты откроешь ${world.collectibleAcc}. Или реши головоломку «Деревья и палатки» для этого набора. Подсказками пользоваться можно!`));$('artifactDialog').showModal();}
 $('closeArtifact').onclick=()=>$('artifactDialog').close();
-function startMission(id){const m=missions.find(m=>m.id===id);missionId=id;origin='home';start(makeProblems(m.count,'mixed',m.level),m.title,`Реши ${Math.ceil(m.count*.8)} из ${m.count} примеров · + и − и получи ${world.collectibleAcc}. Подсказки разрешены!`);}
+function startMission(id){const m=missions.find(m=>m.id===id);missionId=id;origin='home';start(makeProblems(m.count,'mixed',m.level),m.title,`Собираем набор «${m.set}». Реши ${Math.ceil(m.count*.8)} из ${m.count} примеров · + и − и получи ${world.collectibleAcc}. Подсказки разрешены!`);}
 function start(list,title,goal){
  problems=list;records=[];index=streak=bestStreak=earned=0;active=true;$('playTitle').textContent=title;$('goalText').textContent=goal;setCurrency($('sessionStars'),0);view('play');show();
 }
@@ -112,7 +113,7 @@ function finish(){
 function celebrate(){const box=$('confetti');box.replaceChildren();for(let i=0;i<26;i++){const c=el('i','confetto');c.style.setProperty('--x',`${Math.random()*100}%`);c.style.setProperty('--c',['#b99ae9','#ffce7e','#9cd5b9','#8cc9e7'][i%4]);c.style.setProperty('--delay',`${Math.random()*.4}s`);box.append(c);}setTimeout(()=>box.replaceChildren(),3000);}
 $('retry').onclick=()=>{missionId=null;origin='home';start(lastMistakes.map(p=>({...p})),'Ещё одна попытка',`Повтори трудные примеры. За каждый ответ — ${world.currency}!`);};
 $('startFree').onclick=()=>{missionId=null;origin='free';start(makeProblems(Number($('count').value),'mixed',$('level').value,$('negative').checked),'Просто играем!',`Считай в своём темпе и собирай ${world.currency}.`);};
-$('goMission').onclick=()=>$('missionAnchor').scrollIntoView({behavior:'smooth',block:'start'});
+$('goMission').onclick=()=>$('activityHub').scrollIntoView({behavior:'smooth',block:'start'});
 $('nextMission').onclick=()=>view('home');
 function requestView(id){pendingWorld=null;if(active){pendingView=id;$('leaveDialog').showModal();}else view(id);}
 let pendingView='home';$('leave').onclick=()=>requestView(origin);$('stay').onclick=()=>{pendingWorld=null;$('leaveDialog').close();};$('confirmLeave').onclick=()=>{active=false;$('leaveDialog').close();if(pendingWorld){const id=pendingWorld;pendingWorld=null;switchWorld(id);}else view(pendingView);};
@@ -139,7 +140,7 @@ function applyWorld(){
  else if(worldId==='football')avatar.innerHTML='<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M7 61V48Q9 36 24 36H40Q55 36 57 48V61Z" fill="#35966e"/><path d="M24 36L32 45L40 36" fill="#fff7df"/><circle cx="32" cy="22" r="16" fill="#edbd91"/><path d="M16 21Q12 3 30 3Q51 1 49 23L43 17L38 11Q28 20 16 21Z" fill="#5a4139"/><circle cx="26" cy="23" r="1.7" fill="#493b44"/><circle cx="38" cy="23" r="1.7" fill="#493b44"/><path d="M27 30Q32 34 37 30" stroke="#925b52" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="47" cy="51" r="11" fill="white" stroke="#31574b" stroke-width="1.5"/><path d="M47 45L52 49L50 55H44L42 49Z" fill="#31574b"/></svg>';
  else avatar.innerHTML=portrait(world.mascot||artifacts[0]);
  $('clubName').textContent=world.club;$('walletIcon').replaceChildren(token());$('walletUnit').textContent=world.unit[2];
- $('welcomeText').textContent=world.welcome;$('heroTitle').textContent=world.hero;$('heroIntro').textContent=world.intro;$('goMission').textContent=world.cta+' →';
+ $('welcomeText').textContent=world.welcome;$('heroTitle').textContent=world.hero;$('heroIntro').textContent={space:'Решай примеры или головоломки с Бипом и собирай космические сокровища!',dog:'Решай примеры или головоломки с Лорри и собирай карточки пород собак!',cat:'Решай примеры или головоломки с Муркой и собирай карточки пород кошек!',football:'Решай примеры или головоломки и открывай карточки известных футболистов!'}[worldId];$('goMission').textContent='Выбрать занятие →';
  $('missionHeading').textContent=world.section;$('missionNote').textContent=world.missionNote||(worldId==='space'?`${artifacts.length} сокровищ ждут тебя!`:`${artifacts.length} хвостатых друзей ждут тебя!`);$('bannerTitle').textContent=world.banner;$('bannerText').textContent=world.bannerText;$('collectionTitle').textContent=world.collectionTitle;$('collectionNote').textContent=world.collectionNote;
  $('freeIntro').textContent=`Плюс и минус вперемешку. За ответы получай ${world.currency}!`;$('freeCollectionNote').textContent=`${world.collectionKind||(worldId==='space'?'Артефакты':'Породы')} можно открыть в приключениях.`;
  $('buddyName').textContent=`Я ${world.buddy}!`;$('hint').textContent=`💡 ${world.buddy}, помоги!`;$('spaceArt').hidden=worldId!=='space';$('petHero').hidden=worldId==='space';
@@ -149,7 +150,7 @@ function applyWorld(){
   const bubble=el('span','pet-bubble',world.heroBubble||(worldId==='dog'?'Я Лорри! Дай лапу!':'Мур! Дай лапу!'));setSpeech(bubble,bubble.textContent);const face=el('div','hero-pet-face');face.innerHTML=portrait(buddy);
   const fun=el('span','pet-fun-token');fun.append(token());$('petHero').append(bubble,face,fun,el('span','pet-paw',worldId==='football'?'🏆':'🐾'),el('span','pet-math','＋ −'));
  }
- $('leave').textContent=`← К ${world.place}`;$('nextMission').textContent=`К ${world.place} →`;$('confirmLeave').textContent=`К ${world.place}`;$('celebration').replaceChildren(el('span','','🎉'),token(),el('span','','🎉'));
+ $('leave').textContent='← Выбрать занятие';$('nextMission').textContent=`К ${world.place} →`;$('confirmLeave').textContent=`К ${world.place}`;$('celebration').replaceChildren(el('span','','🎉'),token(),el('span','','🎉'));
  for(const b of document.querySelectorAll('[data-world-choice]')){const selected=b.dataset.worldChoice===worldId;b.setAttribute('aria-pressed',String(selected));b.classList.toggle('selected',selected);}
  document.title=`Считай легко · ${world.name}`;
 }
@@ -158,8 +159,24 @@ let pendingWorld=null;
 for(const b of document.querySelectorAll('[data-world-choice]'))b.onclick=()=>switchWorld(b.dataset.worldChoice);
 
 puzzleUI=mountTents($('tents'),{
- context:()=>({id:worldId,world,missions,profile}),
+ context:()=>({id:worldId,world,missions,profile,targetMission:goalMission()}),
+ openActivities:()=>requestView('home'),
  reward:(id,set)=>{const result=settlePuzzle(profile,id,set,worldId);profile=result.profile;save();if(!result.already)celebrate();return {...result,image:result.reward?itemImage(result.reward,true):null};},
  openCollection:()=>requestView('collection')
 });
-if(location.hash==='#tents')view('tents');
+if(location.hash==='#tents')view('home');
+
+function goalMission(){
+ return missions.find(m=>m.id===selectedSets[worldId])||missions.find(m=>artifacts.some(a=>a.mission===m.id&&!profile.items.includes(a.id)))||missions[0];
+}
+function renderActivity(){
+ const m=goalMission();selectedSets[worldId]=m.id;try{localStorage.setItem(`schitay-goal-${worldId}-v1`,m.id);}catch{storageOK=false;}
+ $('activitySet').replaceChildren(...missions.map(set=>new Option(set.set,set.id)));$('activitySet').value=m.id;
+ const items=artifacts.filter(a=>a.mission===m.id),owned=items.filter(a=>profile.items.includes(a.id)).length;
+ $('activityProgress').textContent=`${m.set} · ${owned} из ${items.length} в коллекции`;
+ $('mathActivityGoal').textContent=`Реши ${Math.ceil(m.count*.8)} из ${m.count} примеров — получи следующую карточку`;
+ $('activityTitle').textContent=owned===items.length?'Набор собран! Продолжим играть?':'Как получим следующую карточку?';
+}
+$('activitySet').onchange=()=>{selectedSets[worldId]=$('activitySet').value;renderActivity();};
+$('chooseMath').onclick=()=>startMission(goalMission().id);
+$('chooseTents').onclick=()=>view('tents');
