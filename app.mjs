@@ -13,7 +13,7 @@ const selectedSets={};
 const profiles={};
 try{const selected=localStorage.getItem('schitay-world-v1');if(worlds[selected])worldId=selected;}catch{storageOK=false;}
 for(const id of Object.keys(worlds)){try{profiles[id]=cleanProfile(JSON.parse(localStorage.getItem(`schitay-${id}-v1`)||'null'),id);}catch{profiles[id]=cleanProfile(null,id);storageOK=false;}}
-function bindWorld(){world=getWorld(worldId);missions=world.missions;artifacts=world.artifacts;profile=profiles[worldId];if(!selectedSets[worldId])try{selectedSets[worldId]=localStorage.getItem(`schitay-goal-${worldId}-v1`);}catch{storageOK=false;}}
+function bindWorld(){world=getWorld(worldId);missions=world.missions.map((m,i)=>({...m,level:i===0?'easy':i===3?'carry':'all'}));artifacts=world.artifacts;profile=profiles[worldId];if(!selectedSets[worldId])try{selectedSets[worldId]=localStorage.getItem(`schitay-goal-${worldId}-v1`);}catch{storageOK=false;}}
 bindWorld();
 track('page_view',{world:worldId});
 let problems=[],records=[],index=0,streak=0,bestStreak=0,attempts=0,hinted=false,checked=false,active=false,missionId=null,origin='home',earned=0,lastMistakes=[];
@@ -30,6 +30,7 @@ function updateProfile(){
  $('storageNote').textContent=storageOK?'Коллекция сохраняется в этом браузере на этом устройстве.':'Браузер не разрешил сохранение. Коллекция доступна, пока открыта эта страница.';
  renderMissions();renderCollection();renderActivity();
 }
+function difficulty(m){return {easy:'лёгкая',all:'средняя',carry:'сложная'}[m.level];}
 function renderMissions(){
  $('missions').replaceChildren();
  for(const [i,m] of missions.entries()){
@@ -38,7 +39,7 @@ function renderMissions(){
   const art=el('div','mission-art');if(worldId==='space')art.append(el('div','planet',m.symbol));else{const pic=el('div','mission-pet');pic.innerHTML=portrait(artifacts.find(a=>a.mission===m.id));art.append(pic,el('span','math-sticker',m.symbol));}art.setAttribute('aria-hidden','true');
   if(n===total)art.append(el('span','mission-complete','Коллекция собрана ✓'));
   const body=el('div','mission-body');body.append(el('span','mission-num',`МИССИЯ 0${i+1}`),el('h3','',m.title),el('p','','Собирай этот набор: решай примеры или головоломки.'));
-  const meta=el('div','mission-meta');meta.append(el('span','','Примеры или палатки'),el('span','',`${world.collectionIcon} ${n}/${total} · +10 ${world.unit[2]}`));
+  const meta=el('div','mission-meta');meta.append(el('span','',`Сложность: ${difficulty(m)}`),el('span','',`${world.collectionIcon} ${n}/${total} · +10 ${world.unit[2]}`));
   const b=el('button','',n===total?'Набор собран ✓':'Выбрать набор →');b.onclick=()=>{selectedSets[worldId]=m.id;renderActivity();$('activityHub').scrollIntoView({behavior:'smooth',block:'start'});};body.append(meta,b);card.append(art,body);$('missions').append(card);
  }
 }
@@ -178,6 +179,7 @@ function goalMission(){
 function renderActivity(){
  const m=goalMission();selectedSets[worldId]=m.id;try{localStorage.setItem(`schitay-goal-${worldId}-v1`,m.id);}catch{storageOK=false;}
  $('activitySet').replaceChildren(...missions.map(set=>new Option(set.title,set.id)));$('activitySet').value=m.id;
+ $('activityDifficulty').textContent=`Сложность: ${difficulty(m)}`;
  const items=artifacts.filter(a=>a.mission===m.id),owned=items.filter(a=>profile.items.includes(a.id)).length;
  $('activityProgress').textContent=`${m.title} · ${owned} из ${items.length} в коллекции`;
  const size=puzzleSize(missions,m.id);$('tentsActivityGoal').textContent=`Поле ${size} × ${size} · собери один лагерь — получи следующую карточку`;
