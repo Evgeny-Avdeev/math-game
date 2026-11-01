@@ -36,10 +36,10 @@ export function mountTents(root,{context,reward,openCollection,openActivities}){
  $('forestNext').onclick=()=>{const ctx=context();load(nextPuzzle(puzzles,puzzleSize(ctx.missions,ctx.targetMission.id),ctx.profile.puzzles,p.id).id);};$('forestCollection').onclick=openCollection;
  function updateGoal(){const ctx=context();
  if(p){$('forestSize').textContent=`${p.n} × ${p.n}`;const list=puzzles.filter(a=>a.n===p.n);$('forestPuzzle').textContent=`№ ${list.findIndex(a=>a.id===p.id)+1} из ${list.length}`;}
- $('forestSetTitle').textContent=ctx.targetMission.set;
+ $('forestSetTitle').textContent=ctx.targetMission.title;
  const items=ctx.world.artifacts.filter(a=>a.mission===ctx.targetMission.id);
  $('forestSetProgress').textContent=`${items.filter(a=>ctx.profile.items.includes(a.id)).length} из ${items.length} · следующая награда за один новый лагерь`;
- $('forestRewardNote').textContent=`Этот лагерь принесёт награду в набор «${ctx.targetMission.set}».`;
+ $('forestRewardNote').textContent=`Этот лагерь принесёт награду в набор «${ctx.targetMission.title}».`;
  }
  function enter(){const ctx=context(),size=puzzleSize(ctx.missions,ctx.targetMission.id),key=`schitay-tents-${ctx.id}-${ctx.targetMission.id}-v2`;
  const next=nextPuzzle(puzzles,size,ctx.profile.puzzles);

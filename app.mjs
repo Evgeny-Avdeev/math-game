@@ -1,7 +1,7 @@
 const analyticsModule=import('./analytics.mjs?v=1').catch(()=>null);
 function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).catch(()=>{});}
 import {puzzleSize} from './tents-sequence.mjs?v=1';
-import {mountTents} from './tents-ui.mjs?v=rules4-20261031';
+import {mountTents} from './tents-ui.mjs?v=setnames-20261101';
 import {makeProblems,hint} from './math.mjs?v=15';
 import {badgeDefs,cleanProfile,settle,settlePuzzle} from './game.mjs?v=9';
 import {worlds,getWorld,amount} from './worlds.mjs?v=8';
@@ -45,7 +45,7 @@ function renderMissions(){
 function renderCollection(){
  $('sets').replaceChildren();
  for(const m of missions){
-  const set=el('section','set');theme(set,m);const head=el('div','set-head');head.append(el('h2','',m.set),el('span','',`${artifacts.filter(a=>a.mission===m.id&&profile.items.includes(a.id)).length} из ${artifacts.filter(a=>a.mission===m.id).length} найдено`));
+  const set=el('section','set');theme(set,m);const head=el('div','set-head');head.append(el('h2','',m.title),el('span','',`${artifacts.filter(a=>a.mission===m.id&&profile.items.includes(a.id)).length} из ${artifacts.filter(a=>a.mission===m.id).length} найдено`));
   const grid=el('div','artifacts');
   for(const [i,a] of artifacts.filter(a=>a.mission===m.id).entries()){
    const owned=profile.items.includes(a.id);const b=el('button',`artifact${owned?'':' locked'}`);
@@ -59,7 +59,7 @@ function renderCollection(){
 }
 function openArtifact(a,owned,m){const box=$('artifactDetail');box.replaceChildren();box.append(itemImage(a,owned),el('span','eyebrow',m.title),el('h2','',owned?a.name:worldId==='space'?'Здесь будет сокровище':'Здесь будет новый друг!'),el('p','',owned?a.story:`Выполняй это приключение: за каждую удачную игру ты откроешь ${world.collectibleAcc}. Или реши головоломку «Деревья и палатки» для этого набора. Подсказками пользоваться можно!`));$('artifactDialog').showModal();}
 $('closeArtifact').onclick=()=>$('artifactDialog').close();
-function startMission(id){const m=missions.find(m=>m.id===id);missionId=id;origin='home';start(makeProblems(m.count,'mixed',m.level),m.title,`Собираем набор «${m.set}». Реши ${Math.ceil(m.count*.8)} из ${m.count} примеров · + и − и получи ${world.collectibleAcc}. Подсказки разрешены!`);}
+function startMission(id){const m=missions.find(m=>m.id===id);missionId=id;origin='home';start(makeProblems(m.count,'mixed',m.level),m.title,`Собираем набор «${m.title}». Реши ${Math.ceil(m.count*.8)} из ${m.count} примеров · + и − и получи ${world.collectibleAcc}. Подсказки разрешены!`);}
 function start(list,title,goal){
  track('game_start',{world:worldId,game:'math'});
  problems=list;records=[];index=streak=bestStreak=earned=0;active=true;$('playTitle').textContent=title;$('goalText').textContent=goal;setCurrency($('sessionStars'),0);view('play');show();
@@ -177,9 +177,9 @@ function goalMission(){
 }
 function renderActivity(){
  const m=goalMission();selectedSets[worldId]=m.id;try{localStorage.setItem(`schitay-goal-${worldId}-v1`,m.id);}catch{storageOK=false;}
- $('activitySet').replaceChildren(...missions.map(set=>new Option(set.set,set.id)));$('activitySet').value=m.id;
+ $('activitySet').replaceChildren(...missions.map(set=>new Option(set.title,set.id)));$('activitySet').value=m.id;
  const items=artifacts.filter(a=>a.mission===m.id),owned=items.filter(a=>profile.items.includes(a.id)).length;
- $('activityProgress').textContent=`${m.set} · ${owned} из ${items.length} в коллекции`;
+ $('activityProgress').textContent=`${m.title} · ${owned} из ${items.length} в коллекции`;
  const size=puzzleSize(missions,m.id);$('tentsActivityGoal').textContent=`Поле ${size} × ${size} · собери один лагерь — получи следующую карточку`;
  $('mathActivityGoal').textContent=`Реши ${Math.ceil(m.count*.8)} из ${m.count} примеров — получи следующую карточку`;
  $('activityTitle').textContent=owned===items.length?'Набор собран! Продолжим играть?':'Как получим следующую карточку?';
