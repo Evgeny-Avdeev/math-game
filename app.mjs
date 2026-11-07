@@ -15,7 +15,6 @@ let footballMenuOpen=false;
 const isFootball=()=>worldId==='football'||worldId==='footballTeams';
 try{const selected=localStorage.getItem('schitay-world-v1');if(worlds[selected])worldId=selected;}catch{storageOK=false;}
 for(const id of Object.keys(worlds)){try{profiles[id]=cleanProfile(JSON.parse(localStorage.getItem(`schitay-${id}-v1`)||'null'),id);}catch{profiles[id]=cleanProfile(null,id);storageOK=false;}}
-footballMenuOpen=isFootball();
 function bindWorld(){world=getWorld(worldId);missions=world.missions.map((m,i)=>({...m,level:i===0?'easy':i===3?'carry':'all'}));artifacts=world.artifacts;profile=profiles[worldId];if(!selectedSets[worldId])try{selectedSets[worldId]=localStorage.getItem(`schitay-goal-${worldId}-v1`);}catch{storageOK=false;}}
 bindWorld();
 track('page_view',{world:worldId});
@@ -164,7 +163,7 @@ function applyWorld(){
  for(const b of document.querySelectorAll('[data-world-choice]')){const selected=b.dataset.worldChoice===worldId||(b.dataset.worldChoice==='football'&&isFootball());b.setAttribute('aria-pressed',String(selected));b.classList.toggle('selected',selected);}
  document.title=`Считай легко · ${world.name}`;
 }
-function switchWorld(id){if(!worlds[id])return;if(active){pendingWorld=id;pendingView='home';$('leaveDialog').showModal();return;}worldId=id;footballMenuOpen=isFootball();bindWorld();track('world_select',{world:worldId});try{localStorage.setItem('schitay-world-v1',id);}catch{storageOK=false;}applyWorld();updateProfile();view('home');}
+function switchWorld(id){if(!worlds[id])return;if(active){pendingWorld=id;pendingView='home';$('leaveDialog').showModal();return;}worldId=id;footballMenuOpen=false;bindWorld();track('world_select',{world:worldId});try{localStorage.setItem('schitay-world-v1',id);}catch{storageOK=false;}applyWorld();updateProfile();view('home');}
 let pendingWorld=null;
 function renderFootballMenu(){
  const parent=document.querySelector('[data-world-choice="football"]');
@@ -178,7 +177,11 @@ for(const b of document.querySelectorAll('[data-world-choice]'))b.onclick=()=>{
  else switchWorld(b.dataset.worldChoice);
 };
 for(const b of document.querySelectorAll('[data-football-choice]'))b.onclick=()=>switchWorld(b.dataset.footballChoice);
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&footballMenuOpen){footballMenuOpen=false;renderFootballMenu();}});
+function closeFootballMenu(){if(footballMenuOpen){footballMenuOpen=false;renderFootballMenu();}}
+document.addEventListener('click',e=>{
+ if(footballMenuOpen&&!e.target.closest('[data-world-choice="football"]'))closeFootballMenu();
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeFootballMenu();});
 
 puzzleUI=mountTents($('tents'),{
  context:()=>({id:worldId,world,missions,profile,targetMission:goalMission()}),
