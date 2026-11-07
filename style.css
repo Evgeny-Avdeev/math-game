@@ -89,3 +89,7 @@ nav{flex-wrap:wrap;gap:5px}.nav{font-size:14px}.forest-invite{display:flex;align
 .football-options button:hover{background:#edf7e5}
 .football-options button:focus-visible{outline:3px solid #35966e;outline-offset:3px}
 @media(max-width:540px){.football-options{grid-template-columns:1fr}.football-menu{padding:12px}.football-options button{padding:12px}}
+
+.activity-help{margin-top:12px}.activity-help>summary{display:flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;border:2px solid var(--outline);border-radius:50%;background:var(--bg);color:var(--purple);font-size:23px;font-weight:800;line-height:1;cursor:pointer;list-style:none}.activity-help>summary::-webkit-details-marker{display:none}.activity-help>summary:hover,.activity-help[open]>summary{background:var(--hero);border-color:var(--purple)}.activity-help>summary:focus-visible{outline:3px solid var(--purple);outline-offset:3px}.activity-help>.activity-shared{margin:10px 0 0;line-height:1.7}
+
+.activity-choice small{font-size:14px;font-weight:800;line-height:1.5;color:var(--purple);margin-top:9px}

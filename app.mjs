@@ -1,11 +1,9 @@
 const analyticsModule=import('./analytics.mjs?v=1').catch(()=>null);
 function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).catch(()=>{});}
 import {mountFigudoku} from './figudoku-ui.mjs?v=reward-limits-20261107';
-import {figudokuLevel,levelNames} from './figudoku-engine.mjs?v=1';
-import {puzzleSize} from './tents-sequence.mjs?v=1';
 import {mountTents} from './tents-ui.mjs?v=reward-limits-20261107';
 import {makeProblems,hint} from './math.mjs?v=15';
-import {badgeDefs,cleanProfile,settle,settlePuzzle,rewardStatus,rewardMessage,rewardModes,rewardModeNames} from './game.mjs?v=teams-20261107';
+import {badgeDefs,cleanProfile,settle,settlePuzzle,rewardStatus,rewardMessage,rewardModes} from './game.mjs?v=teams-20261107';
 import {worlds,getWorld,amount} from './worlds.mjs?v=teams-20261107';
 import {portrait} from './portraits.mjs?v=teams-20261107';
 const $=id=>document.getElementById(id);
@@ -203,15 +201,11 @@ function renderActivity(){
  const m=goalMission();selectedSets[worldId]=m.id;try{localStorage.setItem(`schitay-goal-${worldId}-v1`,m.id);}catch{storageOK=false;}
  $('activitySet').replaceChildren(...missions.map(set=>new Option(set.title,set.id)));$('activitySet').value=m.id;
  $('activityDifficulty').textContent=`Сложность: ${difficulty(m)}`;
- const fl=figudokuLevel(missions,m.id),fn=fl==='hard'?8:4;
- $('figudokuActivityGoal').textContent=`${levelNames[fl]} · поле ${fn} × ${fn} · одна головоломка — следующая карточка`;
  const items=artifacts.filter(a=>a.mission===m.id),owned=items.filter(a=>profile.items.includes(a.id)).length;
  $('activityProgress').textContent=`${m.title} · ${owned} из ${items.length} в коллекции`;
- const size=puzzleSize(missions,m.id);$('tentsActivityGoal').textContent=`Поле ${size} × ${size} · собери один лагерь — получи следующую карточку`;
- $('mathActivityGoal').textContent=`Реши ${Math.ceil(m.count*.8)} из ${m.count} примеров — получи следующую карточку`;
  for(const mode of rewardModes){
   const status=rewardStatus(profile,m.id,mode,worldId),target=$(`${mode}ActivityGoal`);
-  target.textContent=status.allowed?`${target.textContent} · получено ${status.counts[mode]}/${status.limit} этим способом${status.counts[mode]===0?' · попробуй обязательно!':''}`:rewardMessage(status);
+  target.textContent=status.allowed?'Реши и получи карточку':'Только тренировка';
  }
  $('activityTitle').textContent=owned===items.length?'Набор собран! Продолжим играть?':'Как получим следующую карточку?';
 }
