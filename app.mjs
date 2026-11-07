@@ -1,6 +1,6 @@
 const analyticsModule=import('./analytics.mjs?v=1').catch(()=>null);
 function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).catch(()=>{});}
-import {mountFigudoku} from './figudoku-ui.mjs?v=2';
+import {mountFigudoku} from './figudoku-ui.mjs?v=3';
 import {figudokuLevel,levelNames} from './figudoku-engine.mjs?v=1';
 import {puzzleSize} from './tents-sequence.mjs?v=1';
 import {mountTents} from './tents-ui.mjs?v=figudoku-20261107';
