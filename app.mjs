@@ -3,9 +3,9 @@ function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).ca
 import {mountFigudoku} from './figudoku-ui.mjs?v=reward-limits-20261107';
 import {mountTents} from './tents-ui.mjs?v=reward-limits-20261107';
 import {makeProblems,hint} from './math.mjs?v=15';
-import {badgeDefs,cleanProfile,settle,settlePuzzle,rewardStatus,rewardMessage,rewardModes} from './game.mjs?v=teams-20261107';
-import {worlds,getWorld,amount} from './worlds.mjs?v=teams-20261107';
-import {portrait} from './portraits.mjs?v=teams-20261107';
+import {badgeDefs,cleanProfile,settle,settlePuzzle,rewardStatus,rewardMessage,rewardModes} from './game.mjs?v=teams-fix-20261107';
+import {worlds,getWorld,amount} from './worlds.mjs?v=teams-fix-20261107';
+import {portrait} from './portraits.mjs?v=teams-fix-20261107';
 const $=id=>document.getElementById(id);
 let worldId='space',world,missions,artifacts,profile,storageOK=true;
 let puzzleUI,figudokuUI;

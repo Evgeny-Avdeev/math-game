@@ -1,4 +1,4 @@
-import {footballTeamsWorld} from './football-teams.mjs?v=teams-20261107';
+import {footballTeamsWorld} from './football-teams.mjs?v=teams-fix-20261107';
 import {footballWorld} from './football.mjs?v=8';
 import {missions as spaceMissions,artifacts as spaceArtifacts} from './space.mjs?v=8';
 const colors=[['#4b9878','#e4f7cf'],['#438fc1','#e2f3ff'],['#a56abe','#f5e6ff'],['#db9440','#fff1cc']];
