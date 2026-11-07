@@ -19,3 +19,10 @@ export function countFigudokuSolutions(p,limit=2,budget=500000){const n=p.n,L=n*
  if(best<0){count++;return;}const k=best>=L?1:0,i=best%L,other=a[(1-k)*L+i];
  for(const v of opts){const bit=1<<(v-1),pair=k?(other-1)*n+v-1:(v-1)*n+other-1;a[best]=v;for(const u of us[i])m[k][u]|=bit;if(other)pairs[pair]=true;search();if(other)pairs[pair]=false;for(const u of us[i])m[k][u]&=~bit;a[best]=0;if(count>=limit)return;}}
  search();return count;}
+
+// Exclude the edited cell: only complete pairs elsewhere reserve a choice.
+export function figudokuPairUsed(numbers,shapes,selected,type,value){
+ if(!value)return false;
+ const number=type==='number'?value:numbers[selected],shape=type==='shape'?value:shapes[selected];
+ return !!number&&!!shape&&numbers.some((v,i)=>i!==selected&&v===number&&shapes[i]===shape);
+}

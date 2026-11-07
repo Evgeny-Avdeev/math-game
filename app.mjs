@@ -1,7 +1,7 @@
 import {tutorialVisit} from './tutorial-visit.mjs?v=1';
 const analyticsModule=import('./analytics.mjs?v=1').catch(()=>null);
 function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).catch(()=>{});}
-import {mountFigudoku} from './figudoku-ui.mjs?v=first-visit-20261108';
+import {mountFigudoku} from './figudoku-ui.mjs?v=pair-choice-1';
 import {mountTents} from './tents-ui.mjs?v=first-visit-20261108';
 import {makeProblems,hint} from './math.mjs?v=15';
 import {badgeDefs,cleanProfile,settle,settlePuzzle,rewardStatus,rewardMessage,rewardModes} from './game.mjs?v=teams-repair2-20261107';
