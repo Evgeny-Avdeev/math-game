@@ -1,4 +1,4 @@
-import {teamPortrait} from './football-teams.mjs?v=teams-fix-20261107';
+import {teamPortrait} from './football-teams.mjs?v=teams-repair2-20261107';
 import {playerPortrait} from './player-portraits.mjs?v=8';
 // Original vector portraits: playful illustrations, rather than breed identification photos.
 export function portrait(item){

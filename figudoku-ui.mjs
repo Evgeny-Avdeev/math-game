@@ -1,4 +1,4 @@
-import {rewardMessage} from './game.mjs?v=reward-limits-20261107';
+import {rewardMessage} from './game.mjs?v=teams-repair2-20261107';
 import {figudokuPuzzles} from './figudoku-data.mjs?v=1';
 import {figudokuLevel,levelNames,nextFigudoku,inspectFigudoku} from './figudoku-engine.mjs?v=1';
 import {shapeNames,shapeSVG,cellContents} from './figudoku-symbols.mjs?v=1';

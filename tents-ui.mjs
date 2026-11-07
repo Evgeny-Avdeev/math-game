@@ -1,4 +1,4 @@
-import {rewardMessage} from './game.mjs?v=reward-limits-20261107';
+import {rewardMessage} from './game.mjs?v=teams-repair2-20261107';
 const analyticsModule=import('./analytics.mjs?v=1').catch(()=>null);
 function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).catch(()=>{});}
 import {puzzleSize,nextPuzzle} from './tents-sequence.mjs?v=1';
