@@ -1,20 +1,20 @@
+import {mountPuzzleGuide} from './activity-guide.mjs?v=responsive-buddy-1';
 import {rewardMessage} from './game.mjs?v=teams-repair2-20261107';
 const analyticsModule=import('./analytics.mjs?v=1').catch(()=>null);
 function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).catch(()=>{});}
 import {puzzleSize,nextPuzzle} from './tents-sequence.mjs?v=1';
-import {addTutorial} from './tents-tutorial.mjs?v=2';
+import {addTutorial} from './tents-tutorial.mjs?v=responsive-buddy-20261108';
 import {puzzles} from './tents-data.mjs?v=1';
 import {inspect} from './tents-engine.mjs?v=1';
 export function mountTents(root,{context,reward,openCollection,openActivities}){
  const $=id=>root.querySelector('#'+id);let p,marks=[],history=[],locked=false,draftKey='',hintCell=-1;
- root.innerHTML=`<button class="text-button" id="forestBack">← Выбрать занятие</button><div class="forest-current-goal"><span class="eyebrow">ПРОДОЛЖАЕМ СОБИРАТЬ КОЛЛЕКЦИЮ</span><b id="forestSetTitle"></b><span id="forestSetProgress"></span></div><div class="section-head"><div><span class="eyebrow">ЛОГИКА И НОВЫЕ ОТКРЫТИЯ</span><h1>Деревья и палатки</h1><p class="muted">Одна новая головоломка — одна награда в твою коллекцию!</p></div><span class="forest-sign" aria-hidden="true">🌳 ⛺</span></div>
- <div class="forest-layout"><aside class="forest-guide"><div class="forest-postcard" aria-hidden="true">🌲 ⛺ 🌲<span>Маленький поход<br>для большого ума</span></div><h2>Разобьём лагерь?</h2><ol><li>У каждого дерева своя палатка на соседней клетке: сверху, снизу, слева или справа.</li><li>Палатки не касаются друг друга, даже уголками.</li><li>Числа у поля показывают, сколько палаток в каждой строке и столбце.</li><li>Палатка может стоять рядом с несколькими деревьями, но пара у каждого дерева своя.</li></ol><p class="small" id="forestRewardNote"></p><p class="small muted">Подсказки разрешены. За повтор уже решённого поля новая награда не выдаётся.</p></aside>
- <div class="forest-game"><div class="forest-settings"><div><span class="small muted">Размер поля</span><b id="forestSize"></b></div><div><span class="small muted">Головоломка</span><b id="forestPuzzle"></b></div></div>
+ root.innerHTML=`<button class="text-button" id="forestBack">← Выбрать занятие</button><div class="forest-current-goal"><span class="eyebrow">ПРОДОЛЖАЕМ СОБИРАТЬ КОЛЛЕКЦИЮ</span><b id="forestSetTitle"></b><span id="forestSetProgress"></span></div><div class="game-card forest-game"><div class="game-heading"><div><span class="eyebrow">ЛОГИКА И НОВЫЕ ОТКРЫТИЯ</span><h1>Деревья и палатки</h1></div><div class="game-learning"></div></div><div class="forest-settings"><div><span class="small muted">Размер поля</span><b id="forestSize"></b></div><div><span class="small muted">Головоломка</span><b id="forestPuzzle"></b></div></div>
  <p class="forest-instruction">Нажимай на клетку: ⛺ палатка → · трава → пусто.</p>
  <div class="forest-remaining" role="status" aria-live="polite" aria-atomic="true"><span aria-hidden="true">⛺</span><div><span id="forestRemainingLabel">Осталось поставить</span><strong id="forestRemaining"></strong></div></div><div id="forestBoard" class="forest-board" aria-label="Игровое поле"></div><div class="forest-status"><span id="forestDone"></span></div>
  <div id="forestFeedback" class="forest-feedback" role="status" aria-live="polite" hidden></div><div class="forest-actions"><button class="primary" id="forestCheck">Проверить лагерь ✓</button><button class="secondary" id="forestUndo">↶ Отменить</button><button class="secondary" id="forestHint">💡 Подсказка</button><button class="text-button" id="forestReset">Начать заново</button></div>
- <div id="forestWin" class="forest-win" hidden><div id="forestPrize"></div><button class="primary" id="forestNext">Следующая головоломка →</button><button class="text-button" id="forestCollection">Открыть коллекцию</button></div><p id="forestSave" class="small muted" hidden></p></div></div>`;
- function message(s){$('forestFeedback').textContent=s;$('forestFeedback').hidden=!s;}
+ <div id="forestWin" class="forest-win" hidden><div id="forestPrize"></div><button class="primary" id="forestNext">Следующая головоломка →</button><button class="text-button" id="forestCollection">Открыть коллекцию</button></div><p id="forestSave" class="small muted" hidden></p></div>`;
+ const guide=mountPuzzleGuide(root,{context,mode:'tents'});
+ function message(s){guide.say(s);$('forestFeedback').textContent=s;$('forestFeedback').hidden=!s;}
  function persist(){try{localStorage.setItem(draftKey,JSON.stringify({id:p.id,marks,size:p.n,mission:context().targetMission.id}));}catch{$('forestSave').textContent='Сохранение недоступно: не закрывай страницу до конца игры.';$('forestSave').hidden=false;}}
  function load(id,saved){p=puzzles.find(p=>p.id===id)||puzzles[0];marks=Array.isArray(saved)&&saved.length===p.n*p.n?saved.map((v,i)=>p.trees.includes(i)?0:[0,1,2].includes(v)?v:0):Array(p.n*p.n).fill(0);history=[];locked=false;hintCell=-1;track('game_start',{world:context().id,game:'tents'});$('forestWin').hidden=true;message('');draw();persist();complete();}
  function draw(){updateGoal();const state=inspect(p,marks),board=$('forestBoard');board.style.setProperty('--n',p.n);board.replaceChildren();board.append(document.createElement('span'));
@@ -35,12 +35,12 @@ export function mountTents(root,{context,reward,openCollection,openActivities}){
  if(locked||!inspect(p,marks).solved)return false;
  locked=true;track('game_complete',{world:context().id,game:'tents',solved:1});const result=reward(p.id,context().targetMission.id);draw();$('forestWin').hidden=false;$('forestPrize').replaceChildren();message(result.already?'Этот лагерь уже был решён. Продолжим со следующей головоломкой!':'Ура! Лагерь готов, все правила соблюдены!');const title=document.createElement('h2');title.textContent=result.already?'Отличная тренировка!':result.reward?'Новая награда в коллекции!':'Лагерь готов! +10';$('forestPrize').append(title);if(result.reward){const pic=document.createElement('div');pic.className='forest-prize-image';pic.append(result.image);const name=document.createElement('h3');name.textContent=result.reward.name;const story=document.createElement('p');story.textContent=result.reward.story;$('forestPrize').append(pic,name,story);}else{const note=document.createElement('p');note.textContent=result.already?'За это поле награда уже получена.':`${rewardMessage(result.rewardStatus)} За новый лагерь получено 10 единиц награды!`;$('forestPrize').append(note);}persist();return true;}
  $('forestNext').onclick=()=>{const ctx=context();load(nextPuzzle(puzzles,puzzleSize(ctx.missions,ctx.targetMission.id),ctx.profile.puzzles,p.id).id);};$('forestCollection').onclick=openCollection;
- function updateGoal(){const ctx=context();
+ function updateGoal(){guide.update();const ctx=context();
  if(p){$('forestSize').textContent=`${p.n} × ${p.n}`;const list=puzzles.filter(a=>a.n===p.n);$('forestPuzzle').textContent=`№ ${list.findIndex(a=>a.id===p.id)+1} из ${list.length}`;}
  $('forestSetTitle').textContent=ctx.targetMission.title;
  const items=ctx.world.artifacts.filter(a=>a.mission===ctx.targetMission.id);
  $('forestSetProgress').textContent=`${items.filter(a=>ctx.profile.items.includes(a.id)).length} из ${items.length} · следующая награда за один новый лагерь`;
- $('forestRewardNote').textContent=`Этот лагерь принесёт награду в набор «${ctx.targetMission.title}».`;
+
  }
  function enter(){const ctx=context(),size=puzzleSize(ctx.missions,ctx.targetMission.id),key=`schitay-tents-${ctx.id}-${ctx.targetMission.id}-v2`;
  const next=nextPuzzle(puzzles,size,ctx.profile.puzzles);
@@ -52,4 +52,5 @@ export function mountTents(root,{context,reward,openCollection,openActivities}){
  addTutorial(root);
  return {enter};
 }
+
 
