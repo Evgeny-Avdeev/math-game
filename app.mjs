@@ -22,7 +22,22 @@ let problems=[],records=[],index=0,streak=0,bestStreak=0,attempts=0,hinted=false
 function save(){profiles[worldId]=profile;try{localStorage.setItem(`schitay-${worldId}-v1`,JSON.stringify(profile));}catch{storageOK=false;}updateProfile();}
 function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e;}
 function theme(e,m){e.style.setProperty('--accent',m.accent);e.style.setProperty('--tint',m.tint);}
-function view(id){if(id==='tents')puzzleUI?.enter();if(id==='figudoku')figudokuUI?.enter();for(const e of document.querySelectorAll('.view'))e.hidden=e.id!==id;for(const b of document.querySelectorAll('nav [data-view]')){b.classList.toggle('active',b.dataset.view===(['tents','figudoku','play','result'].includes(id)?'home':id));b.setAttribute('aria-current',b.dataset.view===(['tents','figudoku','play','result'].includes(id)?'home':id)?'page':'false');}window.scrollTo({top:0,behavior:'instant'});}
+function view(id,options={}){if(id==='tents')puzzleUI?.enter();if(id==='figudoku')figudokuUI?.enter();for(const e of document.querySelectorAll('.view'))e.hidden=e.id!==id;for(const b of document.querySelectorAll('nav [data-view]')){b.classList.toggle('active',b.dataset.view===(['tents','figudoku','play','result'].includes(id)?'home':id));b.setAttribute('aria-current',b.dataset.view===(['tents','figudoku','play','result'].includes(id)?'home':id)?'page':'false');}scrollToView(id,options);}
+// Wait until the newly selected view and its dynamic content have been laid out.
+let navigationFrame=0;
+function scrollToView(id,{scroll=true}={}){
+ cancelAnimationFrame(navigationFrame);
+ if(!scroll){window.scrollTo({top:0,behavior:'instant'});return;}
+ if(!matchMedia('(max-width:600px)').matches){window.scrollTo({top:0,behavior:'instant'});return;}
+ navigationFrame=requestAnimationFrame(()=>{
+  const selectors={home:'#activityHub',play:'#play .prompt',tents:'#tents .forest-remaining',figudoku:'#figudoku .forest-remaining',collection:'#collection .section-head',free:'#free .free-card',result:'#result .result-card'};
+  const target=document.querySelector(selectors[id]||'#'+id);
+  if(!target||target.closest('[hidden]'))return;
+  const top=Math.max(0,target.getBoundingClientRect().top+window.scrollY-12);
+  window.scrollTo({top,behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'instant':'smooth'});
+ });
+}
+document.addEventListener('click',e=>{if(e.target.closest('#forestNext'))scrollToView('tents');else if(e.target.closest('#figNext'))scrollToView('figudoku');});
 function updateProfile(){
  $('wallet').textContent=profile.stars;$('collectionCount').textContent=`${profile.items.length}/${artifacts.length}`;$('collectionTotal').textContent=`${profile.items.length} / ${artifacts.length}`;
  const level=Math.floor(profile.stars/50)+1;
@@ -134,7 +149,7 @@ $('print').onclick=()=>{
  const grid=el('div','print-grid');list.forEach((p,i)=>grid.append(el('div','',`${i+1}. ${p.a} ${p.op} ${p.b} = ____`)));sheet.append(grid);
  const answers=el('div','answers');answers.append(el('h2','','Ответы для проверки'));const ag=el('div','print-grid');list.forEach((p,i)=>ag.append(el('div','',`${i+1}. ${p.answer}`)));answers.append(ag);sheet.append(answers);window.print();
 };
-applyWorld();updateProfile();view('home');
+applyWorld();updateProfile();view('home',{scroll:false});
 
 function themedBadges(){return badgeDefs.map(b=>b.id==='first'?{...b,name:worldId==='space'?'Первый полёт':'Первое приключение'}:b.id==='collector'?{...b,name:worldId==='space'?'Хранитель сокровищ':'Вся команда в сборе!',description:worldId==='space'?'Собери все 36 артефактов':`Собери все ${artifacts.length} ${isFootball()?(worldId==='footballTeams'?'карточек команд':'карточек футболистов'):worldId==='dog'?'пород собак':'пород кошек'}`} : b);}
 function itemImage(a,owned){const d=el('span','artifact-image'+(a.pet?' pet-image':''));if(owned&&a.pet)d.innerHTML=portrait(a);else d.textContent=owned?a.icon:'🔒';return d;}
@@ -163,7 +178,7 @@ function applyWorld(){
  for(const b of document.querySelectorAll('[data-world-choice]')){const selected=b.dataset.worldChoice===worldId||(b.dataset.worldChoice==='football'&&isFootball());b.setAttribute('aria-pressed',String(selected));b.classList.toggle('selected',selected);}
  document.title=`Считай легко · ${world.name}`;
 }
-function switchWorld(id){if(!worlds[id])return;if(active){pendingWorld=id;pendingView='home';$('leaveDialog').showModal();return;}worldId=id;footballMenuOpen=false;bindWorld();track('world_select',{world:worldId});try{localStorage.setItem('schitay-world-v1',id);}catch{storageOK=false;}applyWorld();updateProfile();view('home');}
+function switchWorld(id){if(!worlds[id])return;if(active){pendingWorld=id;pendingView='home';$('leaveDialog').showModal();return;}worldId=id;footballMenuOpen=false;bindWorld();track('world_select',{world:worldId});try{localStorage.setItem('schitay-world-v1',id);}catch{storageOK=false;}applyWorld();updateProfile();view('home',{scroll:false});}
 let pendingWorld=null;
 function renderFootballMenu(){
  const parent=document.querySelector('[data-world-choice="football"]');
