@@ -1,6 +1,8 @@
+import {teamPortrait} from './football-teams.mjs?v=teams-20261107';
 import {playerPortrait} from './player-portraits.mjs?v=8';
 // Original vector portraits: playful illustrations, rather than breed identification photos.
 export function portrait(item){
+ if(item.pet==='team')return teamPortrait(item);
  if(item.pet==='football')return playerPortrait(item)||footballPortrait(item);
  const l=item.look||{},coat=l.coat||'#e7ac68',muzzle=l.muzzle||'#fff2df',eyes=l.eyes||'#43384f';
  const isDog=item.pet==='dog';
@@ -25,3 +27,4 @@ function footballPortrait(item){
  const shirt=item.look?.shirt||'#62b791',initials=item.look?.initials||'⚽';
  return `<svg viewBox="0 0 190 180" role="img" aria-label="Карточка: ${item.name}"><circle cx="95" cy="89" r="77" fill="${shirt}" opacity=".16"/><path d="M34 55L63 35L78 40Q95 54 112 40L127 35L156 55L143 84L126 77V145Q95 161 64 145V77L47 84Z" fill="${shirt}" stroke="#375750" stroke-width="4" stroke-linejoin="round"/><path d="M78 40Q95 65 112 40M65 125H126" fill="none" stroke="#fff7da" stroke-width="6"/><text x="95" y="99" text-anchor="middle" font-family="Arial,sans-serif" font-size="29" font-weight="bold" fill="#fffdf3">${initials}</text><circle cx="142" cy="137" r="27" fill="#fffdf3" stroke="#375750" stroke-width="3"/><path d="M142 124L153 132L149 145H135L131 132Z" fill="#375750"/><path d="M142 110V119M166 130L158 133M157 158L151 150M126 158L133 149M117 130L126 133" stroke="#375750" stroke-width="4"/><path d="M40 22L43 29L51 30L45 35L47 43L40 39L33 43L35 35L29 30L37 29Z" fill="#efc658"/></svg>`;
 }
+

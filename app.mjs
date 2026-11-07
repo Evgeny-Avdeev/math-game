@@ -5,16 +5,19 @@ import {figudokuLevel,levelNames} from './figudoku-engine.mjs?v=1';
 import {puzzleSize} from './tents-sequence.mjs?v=1';
 import {mountTents} from './tents-ui.mjs?v=reward-limits-20261107';
 import {makeProblems,hint} from './math.mjs?v=15';
-import {badgeDefs,cleanProfile,settle,settlePuzzle,rewardStatus,rewardMessage,rewardModes,rewardModeNames} from './game.mjs?v=reward-limits-20261107';
-import {worlds,getWorld,amount} from './worlds.mjs?v=8';
-import {portrait} from './portraits.mjs?v=8';
+import {badgeDefs,cleanProfile,settle,settlePuzzle,rewardStatus,rewardMessage,rewardModes,rewardModeNames} from './game.mjs?v=teams-20261107';
+import {worlds,getWorld,amount} from './worlds.mjs?v=teams-20261107';
+import {portrait} from './portraits.mjs?v=teams-20261107';
 const $=id=>document.getElementById(id);
 let worldId='space',world,missions,artifacts,profile,storageOK=true;
 let puzzleUI,figudokuUI;
 const selectedSets={};
 const profiles={};
+let footballMenuOpen=false;
+const isFootball=()=>worldId==='football'||worldId==='footballTeams';
 try{const selected=localStorage.getItem('schitay-world-v1');if(worlds[selected])worldId=selected;}catch{storageOK=false;}
 for(const id of Object.keys(worlds)){try{profiles[id]=cleanProfile(JSON.parse(localStorage.getItem(`schitay-${id}-v1`)||'null'),id);}catch{profiles[id]=cleanProfile(null,id);storageOK=false;}}
+footballMenuOpen=isFootball();
 function bindWorld(){world=getWorld(worldId);missions=world.missions.map((m,i)=>({...m,level:i===0?'easy':i===3?'carry':'all'}));artifacts=world.artifacts;profile=profiles[worldId];if(!selectedSets[worldId])try{selectedSets[worldId]=localStorage.getItem(`schitay-goal-${worldId}-v1`);}catch{storageOK=false;}}
 bindWorld();
 track('page_view',{world:worldId});
@@ -30,7 +33,7 @@ function updateProfile(){
  $('levelInfo').textContent=`Уровень ${level} · ${profile.stars%50} из 50 ${world.unit[2]} до следующего`;$('levelProgress').style.width=`${profile.stars%50*2}%`;
  $('totalSolved').textContent=profile.solved;$('totalMissions').textContent=profile.completed;
  $('storageNote').textContent=storageOK?'Коллекция сохраняется в этом браузере на этом устройстве.':'Браузер не разрешил сохранение. Коллекция доступна, пока открыта эта страница.';
- renderMissions();renderCollection();renderActivity();
+ renderMissions();renderCollection();renderActivity();renderFootballMenu();
 }
 function difficulty(m){return {easy:'лёгкая',all:'средняя',carry:'сложная'}[m.level];}
 function renderMissions(){
@@ -60,7 +63,7 @@ function renderCollection(){
  $('badges').replaceChildren();
  for(const b of themedBadges()){const owned=profile.badges.includes(b.id);const card=el('div',`badge${owned?'':' locked'}`);card.append(el('span','',owned?b.icon:'🔒'),el('b','',b.name),el('p','',owned?'Получено! '+b.description:b.description));$('badges').append(card);}
 }
-function openArtifact(a,owned,m){const box=$('artifactDetail');box.replaceChildren();box.append(itemImage(a,owned),el('span','eyebrow',m.title),el('h2','',owned?a.name:worldId==='space'?'Здесь будет сокровище':'Здесь будет новый друг!'),el('p','',owned?a.story:`Выполняй это приключение: за удачную игру ты можешь открыть ${world.collectibleAcc}. Или реши «Деревья и палатки» или «Фигудоку» для этого набора. Чтобы собрать набор, получи карточки всеми тремя способами. Одним способом — не больше 60% набора. Подсказками пользоваться можно!`));$('artifactDialog').showModal();}
+function openArtifact(a,owned,m){const box=$('artifactDetail');box.replaceChildren();box.append(itemImage(a,owned),el('span','eyebrow',m.title),el('h2','',owned?a.name:worldId==='space'?'Здесь будет сокровище':isFootball()?'Здесь будет новая карточка!':'Здесь будет новый друг!'),el('p','',owned?a.story:`Выполняй это приключение: за удачную игру ты можешь открыть ${world.collectibleAcc}. Или реши «Деревья и палатки» или «Фигудоку» для этого набора. Чтобы собрать набор, получи карточки всеми тремя способами. Одним способом — не больше 60% набора. Подсказками пользоваться можно!`));$('artifactDialog').showModal();}
 $('closeArtifact').onclick=()=>$('artifactDialog').close();
 function startMission(id){const m=missions.find(m=>m.id===id);missionId=id;origin='home';start(makeProblems(m.count,'mixed',m.level),m.title,`Собираем набор «${m.title}». Реши ${Math.ceil(m.count*.8)} из ${m.count} примеров · + и − и получи ${world.collectibleAcc}. Подсказки разрешены! ${rewardMessage(rewardStatus(profile,id,'math',worldId))}`);}
 function start(list,title,goal){
@@ -136,20 +139,20 @@ $('print').onclick=()=>{
 };
 applyWorld();updateProfile();view('home');
 
-function themedBadges(){return badgeDefs.map(b=>b.id==='first'?{...b,name:worldId==='space'?'Первый полёт':'Первое приключение'}:b.id==='collector'?{...b,name:worldId==='space'?'Хранитель сокровищ':'Вся команда в сборе!',description:worldId==='space'?'Собери все 36 артефактов':`Собери все ${artifacts.length} ${worldId==='football'?'карточек футболистов':worldId==='dog'?'пород собак':'пород кошек'}`} : b);}
+function themedBadges(){return badgeDefs.map(b=>b.id==='first'?{...b,name:worldId==='space'?'Первый полёт':'Первое приключение'}:b.id==='collector'?{...b,name:worldId==='space'?'Хранитель сокровищ':'Вся команда в сборе!',description:worldId==='space'?'Собери все 36 артефактов':`Собери все ${artifacts.length} ${isFootball()?(worldId==='footballTeams'?'карточек команд':'карточек футболистов'):worldId==='dog'?'пород собак':'пород кошек'}`} : b);}
 function itemImage(a,owned){const d=el('span','artifact-image'+(a.pet?' pet-image':''));if(owned&&a.pet)d.innerHTML=portrait(a);else d.textContent=owned?a.icon:'🔒';return d;}
 function token(){const t=el('span',worldId==='cat'?'sausage-token':'currency-token',worldId==='cat'?'':world.rewardIcon);t.setAttribute('aria-hidden','true');return t;}
 function setCurrency(target,n){target.replaceChildren(token(),el('span','',String(n)));}
 function applyWorld(){
- document.body.dataset.world=worldId;
+ document.body.dataset.world=isFootball()?'football':worldId;
  const avatar=$('levelAvatar');avatar.replaceChildren();
  const avatarNames={space:'Космонавт',dog:'Мальтипу Лорри',cat:'Котик',football:'Футболист'};
- avatar.setAttribute('aria-label',avatarNames[worldId]);
+ avatar.setAttribute('aria-label',avatarNames[worldId==='footballTeams'?'football':worldId]);
  if(worldId==='space')avatar.textContent='🧑‍🚀';
- else if(worldId==='football')avatar.innerHTML='<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M7 61V48Q9 36 24 36H40Q55 36 57 48V61Z" fill="#35966e"/><path d="M24 36L32 45L40 36" fill="#fff7df"/><circle cx="32" cy="22" r="16" fill="#edbd91"/><path d="M16 21Q12 3 30 3Q51 1 49 23L43 17L38 11Q28 20 16 21Z" fill="#5a4139"/><circle cx="26" cy="23" r="1.7" fill="#493b44"/><circle cx="38" cy="23" r="1.7" fill="#493b44"/><path d="M27 30Q32 34 37 30" stroke="#925b52" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="47" cy="51" r="11" fill="white" stroke="#31574b" stroke-width="1.5"/><path d="M47 45L52 49L50 55H44L42 49Z" fill="#31574b"/></svg>';
+ else if(isFootball())avatar.innerHTML='<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M7 61V48Q9 36 24 36H40Q55 36 57 48V61Z" fill="#35966e"/><path d="M24 36L32 45L40 36" fill="#fff7df"/><circle cx="32" cy="22" r="16" fill="#edbd91"/><path d="M16 21Q12 3 30 3Q51 1 49 23L43 17L38 11Q28 20 16 21Z" fill="#5a4139"/><circle cx="26" cy="23" r="1.7" fill="#493b44"/><circle cx="38" cy="23" r="1.7" fill="#493b44"/><path d="M27 30Q32 34 37 30" stroke="#925b52" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="47" cy="51" r="11" fill="white" stroke="#31574b" stroke-width="1.5"/><path d="M47 45L52 49L50 55H44L42 49Z" fill="#31574b"/></svg>';
  else avatar.innerHTML=portrait(world.mascot||artifacts[0]);
  $('clubName').textContent=world.club;$('walletIcon').replaceChildren(token());$('walletUnit').textContent=world.unit[2];
- $('welcomeText').textContent=world.welcome;$('heroTitle').textContent=world.hero;$('heroIntro').textContent={space:'Решай примеры или головоломки с Бипом и собирай космические сокровища!',dog:'Решай примеры или головоломки с Лорри и собирай карточки пород собак!',cat:'Решай примеры или головоломки с Муркой и собирай карточки пород кошек!',football:'Решай примеры или головоломки и открывай карточки известных футболистов!'}[worldId];$('goMission').textContent='Выбрать занятие →';
+ $('welcomeText').textContent=world.welcome;$('heroTitle').textContent=world.hero;$('heroIntro').textContent={space:'Решай примеры или головоломки с Бипом и собирай космические сокровища!',dog:'Решай примеры или головоломки с Лорри и собирай карточки пород собак!',cat:'Решай примеры или головоломки с Муркой и собирай карточки пород кошек!',football:'Решай примеры или головоломки и открывай карточки известных футболистов!',footballTeams:world.intro}[worldId];$('goMission').textContent='Выбрать занятие →';
  $('missionHeading').textContent=world.section;$('missionNote').textContent=world.missionNote||(worldId==='space'?`${artifacts.length} сокровищ ждут тебя!`:`${artifacts.length} хвостатых друзей ждут тебя!`);$('bannerTitle').textContent=world.banner;$('bannerText').textContent=world.bannerText;$('collectionTitle').textContent=world.collectionTitle;$('collectionNote').textContent=world.collectionNote;
  $('freeIntro').textContent=`Плюс и минус вперемешку. За ответы получай ${world.currency}!`;$('freeCollectionNote').textContent=`${world.collectionKind||(worldId==='space'?'Артефакты':'Породы')} можно открыть в приключениях.`;
  $('buddyName').textContent=`Я ${world.buddy}!`;$('hint').textContent=`💡 ${world.buddy}, помоги!`;$('spaceArt').hidden=worldId!=='space';$('petHero').hidden=worldId==='space';
@@ -157,15 +160,27 @@ function applyWorld(){
  if(worldId==='space')$('buddyFace').textContent='🤖';else{
   const buddy=world.mascot||artifacts[0];$('buddyFace').innerHTML=portrait(buddy);
   const bubble=el('span','pet-bubble',world.heroBubble||(worldId==='dog'?'Я Лорри! Дай лапу!':'Мур! Дай лапу!'));setSpeech(bubble,bubble.textContent);const face=el('div','hero-pet-face');face.innerHTML=portrait(buddy);
-  const fun=el('span','pet-fun-token');fun.append(token());$('petHero').append(bubble,face,fun,el('span','pet-paw',worldId==='football'?'🏆':'🐾'),el('span','pet-math','＋ −'));
+  const fun=el('span','pet-fun-token');fun.append(token());$('petHero').append(bubble,face,fun,el('span','pet-paw',isFootball()?'🏆':'🐾'),el('span','pet-math','＋ −'));
  }
  $('leave').textContent='← Выбрать занятие';$('nextMission').textContent=`К ${world.place} →`;$('confirmLeave').textContent=`К ${world.place}`;$('celebration').replaceChildren(el('span','','🎉'),token(),el('span','','🎉'));
- for(const b of document.querySelectorAll('[data-world-choice]')){const selected=b.dataset.worldChoice===worldId;b.setAttribute('aria-pressed',String(selected));b.classList.toggle('selected',selected);}
+ for(const b of document.querySelectorAll('[data-world-choice]')){const selected=b.dataset.worldChoice===worldId||(b.dataset.worldChoice==='football'&&isFootball());b.setAttribute('aria-pressed',String(selected));b.classList.toggle('selected',selected);}
  document.title=`Считай легко · ${world.name}`;
 }
-function switchWorld(id){if(!worlds[id])return;if(active){pendingWorld=id;pendingView='home';$('leaveDialog').showModal();return;}worldId=id;bindWorld();track('world_select',{world:worldId});try{localStorage.setItem('schitay-world-v1',id);}catch{storageOK=false;}applyWorld();updateProfile();view('home');}
+function switchWorld(id){if(!worlds[id])return;if(active){pendingWorld=id;pendingView='home';$('leaveDialog').showModal();return;}worldId=id;footballMenuOpen=isFootball();bindWorld();track('world_select',{world:worldId});try{localStorage.setItem('schitay-world-v1',id);}catch{storageOK=false;}applyWorld();updateProfile();view('home');}
 let pendingWorld=null;
-for(const b of document.querySelectorAll('[data-world-choice]'))b.onclick=()=>switchWorld(b.dataset.worldChoice);
+function renderFootballMenu(){
+ const parent=document.querySelector('[data-world-choice="football"]');
+ $('footballMenu').hidden=!footballMenuOpen;parent.setAttribute('aria-expanded',String(footballMenuOpen));
+ $('footballPlayerProgress').textContent=`${profiles.football.items.length} из 36 · твои достижения`;
+ $('footballTeamProgress').textContent=`${profiles.footballTeams.items.length} из 36 · клубы со всего мира`;
+ for(const b of document.querySelectorAll('[data-football-choice]'))b.setAttribute('aria-pressed',String(b.dataset.footballChoice===worldId));
+}
+for(const b of document.querySelectorAll('[data-world-choice]'))b.onclick=()=>{
+ if(b.dataset.worldChoice==='football'){footballMenuOpen=!footballMenuOpen;renderFootballMenu();}
+ else switchWorld(b.dataset.worldChoice);
+};
+for(const b of document.querySelectorAll('[data-football-choice]'))b.onclick=()=>switchWorld(b.dataset.footballChoice);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&footballMenuOpen){footballMenuOpen=false;renderFootballMenu();}});
 
 puzzleUI=mountTents($('tents'),{
  context:()=>({id:worldId,world,missions,profile,targetMission:goalMission()}),
@@ -205,4 +220,5 @@ $('chooseMath').onclick=()=>startMission(goalMission().id);
 $('chooseTents').onclick=()=>view('tents');
 
 $('chooseFigudoku').onclick=()=>view('figudoku');
+
 

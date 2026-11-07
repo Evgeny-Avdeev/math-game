@@ -1,4 +1,4 @@
-import {getWorld} from './worlds.mjs?v=8';
+import {getWorld} from './worlds.mjs?v=teams-20261107';
 export {missions,artifacts} from './space.mjs?v=8';
 export const badgeDefs=[
  {id:'first',icon:'🏅',name:'Первый полёт',description:'Заверши первую миссию',test:p=>p.completed>=1},
@@ -76,4 +76,5 @@ export function settlePuzzle(profile,puzzleId,missionId,worldId='space'){
  for(const b of badgeDefs)if(!p.badges.includes(b.id)&&(b.id==='collector'?p.items.length===artifacts.length:b.test(p)))p.badges.push(b.id);
  return {profile:p,already:false,reward,rewardStatus};
 }
+
 

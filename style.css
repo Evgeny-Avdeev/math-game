@@ -73,3 +73,19 @@ nav{flex-wrap:wrap;gap:5px}.nav{font-size:14px}.forest-invite{display:flex;align
 .fig-selected{font-size:14px;text-align:center;min-height:22px}.fig-controls{display:grid;gap:16px;margin:18px 0}.fig-controls b{font-size:14px}.fig-palette{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px;align-items:center}.fig-option{display:grid;place-items:center;width:44px;height:44px;min-width:0;padding:7px;border:2px solid var(--outline);border-radius:12px;background:var(--bg);color:var(--purple);font-size:21px;font-weight:900;touch-action:manipulation}.fig-option[aria-pressed=true]{background:var(--hero);border-color:var(--purple)}.fig-option:disabled{opacity:.4}.fig-lock{font-size:12px;color:var(--muted)}.fig-tutorial .fig-board{max-width:300px}.fig-tutorial .fig-number{font-size:20px}.fig-tutorial .forest-feedback{min-height:130px}.fig-tutorial-controls{justify-content:center}
 @media(max-width:1000px){.activity-choices{grid-template-columns:1fr}.activity-choice{flex-wrap:nowrap}.activity-choice>span:nth-child(2){flex:1}.activity-choice b{font-size:20px}}
 @media(max-width:480px){#figudoku h1{font-size:29px}.fig-board{margin:16px auto}.fig-large .fig-cell{padding:1px}.fig-large .fig-cell>.fig-shape{inset:6%;width:88%;height:88%}.fig-option{width:42px;height:44px;padding:6px}.fig-palette{gap:6px}.fig-large .fig-number{font-size:13px}.fig-large .fig-number.alone{font-size:16px}.fig-given-mark{font-size:10px}.fig-tutorial{padding:22px}.fig-selected{font-size:12px}}
+
+
+/* Football submenu stays in document flow, including on narrow phones. */
+.football-menu{margin-top:14px;padding:18px;border:2px solid #b7d99a;border-radius:22px;background:#f2fae9}
+.football-menu[hidden]{display:none}
+.football-menu-heading{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline;margin-bottom:12px;color:#2d5944}
+.football-menu-heading>span{font-size:13px;color:#57715d}
+.football-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.football-options button{display:flex;align-items:center;gap:12px;text-align:left;padding:15px;border:2px solid #cde3b9;border-radius:16px;background:white;min-width:0;color:#2d5944;cursor:pointer}
+.football-options button>span:first-child{font-size:32px;flex-shrink:0}
+.football-options b,.football-options small{display:block;overflow-wrap:anywhere}
+.football-options small{margin-top:5px;font-size:12px;color:#57715d}
+.football-options button[aria-pressed=true]{border-color:#35966e;background:#e5f4db;box-shadow:0 0 0 1px #35966e}
+.football-options button:hover{background:#edf7e5}
+.football-options button:focus-visible{outline:3px solid #35966e;outline-offset:3px}
+@media(max-width:540px){.football-options{grid-template-columns:1fr}.football-menu{padding:12px}.football-options button{padding:12px}}
