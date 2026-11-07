@@ -3,7 +3,7 @@ import {rewardMessage} from './game.mjs?v=teams-repair2-20261107';
 const analyticsModule=import('./analytics.mjs?v=1').catch(()=>null);
 function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).catch(()=>{});}
 import {puzzleSize,nextPuzzle} from './tents-sequence.mjs?v=1';
-import {addTutorial} from './tents-tutorial.mjs?v=responsive-buddy-20261108';
+import {addTutorial} from './tents-tutorial.mjs?v=first-visit-20261108';
 import {puzzles} from './tents-data.mjs?v=1';
 import {inspect} from './tents-engine.mjs?v=1';
 export function mountTents(root,{context,reward,openCollection,openActivities}){
@@ -49,8 +49,8 @@ export function mountTents(root,{context,reward,openCollection,openActivities}){
  try{saved=JSON.parse(localStorage.getItem(key)||'null');if(!saved){const old=JSON.parse(localStorage.getItem(`schitay-tents-${ctx.id}-v1`)||'null');if(old?.mission===ctx.targetMission.id)saved=old;}}catch{}
  load(next.id,saved?.id===next.id?saved.marks:null);
  }
- addTutorial(root);
- return {enter};
+ const tutorial=addTutorial(root);
+ return {enter,showTutorialIfFirst:tutorial.openIfFirst};
 }
 
 

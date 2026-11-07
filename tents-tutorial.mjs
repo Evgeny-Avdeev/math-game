@@ -1,3 +1,4 @@
+import {tutorialVisit} from './tutorial-visit.mjs?v=1';
 export function addTutorial(root){
  const launch=document.createElement('button');launch.className='secondary forest-tutorial-launch';launch.textContent='🎓 Научиться играть';root.querySelector('.game-learning').append(launch);
  const dialog=document.createElement('dialog');dialog.className='forest-tutorial';dialog.setAttribute('aria-label','Учебный лагерь');
@@ -17,6 +18,7 @@ export function addTutorial(root){
  dialog.querySelector('.forest-feedback').textContent=instructions[step];dialog.querySelector('.tutorial-finish').hidden=step!==5;
  }
  function start(){const wide=matchMedia('(min-width:601px)').matches;intro.hidden=wide;practice.hidden=!wide;dialog.scrollTop=0;step=0;marks.fill(0);draw();}
- intro.querySelector('.tutorial-practice').onclick=()=>{intro.hidden=true;practice.hidden=false;dialog.scrollTop=0;draw();};launch.onclick=()=>{start();dialog.showModal();};dialog.querySelector('.dialog-close').onclick=()=>dialog.close();dialog.querySelector('.tutorial-again').onclick=start;dialog.querySelector('.tutorial-finish').onclick=()=>dialog.close();
+ intro.querySelector('.tutorial-practice').onclick=()=>{intro.hidden=true;practice.hidden=false;dialog.scrollTop=0;draw();};const visit=tutorialVisit('tents',()=>{if(!dialog.open){start();dialog.showModal();}});launch.onclick=visit.open;dialog.querySelector('.dialog-close').onclick=()=>dialog.close();dialog.querySelector('.tutorial-again').onclick=start;dialog.querySelector('.tutorial-finish').onclick=()=>dialog.close();
+ return visit;
 }
 

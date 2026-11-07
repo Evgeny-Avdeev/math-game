@@ -3,7 +3,7 @@ import {rewardMessage} from './game.mjs?v=teams-repair2-20261107';
 import {figudokuPuzzles} from './figudoku-data.mjs?v=1';
 import {figudokuLevel,levelNames,nextFigudoku,inspectFigudoku} from './figudoku-engine.mjs?v=1';
 import {shapeNames,shapeSVG,cellContents} from './figudoku-symbols.mjs?v=1';
-import {addFigudokuTutorial} from './figudoku-tutorial.mjs?v=responsive-buddy-20261108';
+import {addFigudokuTutorial} from './figudoku-tutorial.mjs?v=first-visit-20261108';
 const analyticsModule=import('./analytics.mjs?v=1').catch(()=>null);
 function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).catch(()=>{});}
 export function mountFigudoku(root,{context,reward,openCollection,openActivities}){
@@ -38,8 +38,8 @@ export function mountFigudoku(root,{context,reward,openCollection,openActivities
  $('figCheck').onclick=()=>{const state=inspectFigudoku(p,numbers,shapes);showErrors=true;draw();if(state.solved)complete();else message(state.bad.size?'В выделенных клетках есть повтор: проверь цифры и фигуры в строках, столбцах и блоках, а также пары на всём поле.':`Повторов пока нет! Осталось заполнить ${state.missing} цифр и фигур.`);};
  $('figHint').onclick=()=>{const i=numbers.findIndex((v,i)=>v!==p.solutionNumbers[i]||shapes[i]!==p.solutionShapes[i]);if(i<0)return complete();selected=highlight=i;draw();message(`Посмотри на выделенную клетку: строка ${Math.floor(i/p.n)+1}, столбец ${i%p.n+1}. Здесь ${shapeNames[p.solutionShapes[i]]} с цифрой ${p.solutionNumbers[i]}. Сравни со строкой, столбцом, блоком и уже заполненными парами.`);};
  $('figNext').onclick=()=>{const ctx=context();load(nextFigudoku(figudokuPuzzles,figudokuLevel(ctx.missions,ctx.targetMission.id),ctx.profile.puzzles,p.id));};
- addFigudokuTutorial(root);
- return {enter(){const ctx=context(),level=figudokuLevel(ctx.missions,ctx.targetMission.id),key=`schitay-figudoku-${ctx.id}-${ctx.targetMission.id}-v1`;if(draftKey===key&&p&&!locked){draw();return;}draftKey=key;let saved;try{saved=JSON.parse(localStorage.getItem(key)||'null');}catch{}const next=nextFigudoku(figudokuPuzzles,level,ctx.profile.puzzles),savedPuzzle=figudokuPuzzles.find(a=>a.id===saved?.id&&a.level===level&&!ctx.profile.puzzles.includes(a.id));load(savedPuzzle||next,savedPuzzle?saved:null);}};
+ const tutorial=addFigudokuTutorial(root);
+ return {showTutorialIfFirst:tutorial.openIfFirst,enter(){const ctx=context(),level=figudokuLevel(ctx.missions,ctx.targetMission.id),key=`schitay-figudoku-${ctx.id}-${ctx.targetMission.id}-v1`;if(draftKey===key&&p&&!locked){draw();return;}draftKey=key;let saved;try{saved=JSON.parse(localStorage.getItem(key)||'null');}catch{}const next=nextFigudoku(figudokuPuzzles,level,ctx.profile.puzzles),savedPuzzle=figudokuPuzzles.find(a=>a.id===saved?.id&&a.level===level&&!ctx.profile.puzzles.includes(a.id));load(savedPuzzle||next,savedPuzzle?saved:null);}};
 }
 
 

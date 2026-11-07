@@ -1,14 +1,15 @@
+import {tutorialVisit} from './tutorial-visit.mjs?v=1';
 const analyticsModule=import('./analytics.mjs?v=1').catch(()=>null);
 function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).catch(()=>{});}
-import {mountFigudoku} from './figudoku-ui.mjs?v=responsive-buddy-20261108';
-import {mountTents} from './tents-ui.mjs?v=responsive-buddy-20261108';
+import {mountFigudoku} from './figudoku-ui.mjs?v=first-visit-20261108';
+import {mountTents} from './tents-ui.mjs?v=first-visit-20261108';
 import {makeProblems,hint} from './math.mjs?v=15';
 import {badgeDefs,cleanProfile,settle,settlePuzzle,rewardStatus,rewardMessage,rewardModes} from './game.mjs?v=teams-repair2-20261107';
 import {worlds,getWorld,amount} from './worlds.mjs?v=teams-repair2-20261107';
 import {portrait} from './portraits.mjs?v=teams-repair2-20261107';
 const $=id=>document.getElementById(id);
 let worldId='space',world,missions,artifacts,profile,storageOK=true;
-let puzzleUI,figudokuUI;
+let puzzleUI,figudokuUI,mathTutorialVisit;
 const selectedSets={};
 const profiles={};
 let footballMenuOpen=false;
@@ -22,7 +23,7 @@ let problems=[],records=[],index=0,streak=0,bestStreak=0,attempts=0,hinted=false
 function save(){profiles[worldId]=profile;try{localStorage.setItem(`schitay-${worldId}-v1`,JSON.stringify(profile));}catch{storageOK=false;}updateProfile();}
 function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e;}
 function theme(e,m){e.style.setProperty('--accent',m.accent);e.style.setProperty('--tint',m.tint);}
-function view(id,options={}){if(id==='tents')puzzleUI?.enter();if(id==='figudoku')figudokuUI?.enter();for(const e of document.querySelectorAll('.view'))e.hidden=e.id!==id;for(const b of document.querySelectorAll('nav [data-view]')){b.classList.toggle('active',b.dataset.view===(['tents','figudoku','play','result'].includes(id)?'home':id));b.setAttribute('aria-current',b.dataset.view===(['tents','figudoku','play','result'].includes(id)?'home':id)?'page':'false');}scrollToView(id,options);}
+function view(id,options={}){if(id==='tents')puzzleUI?.enter();if(id==='figudoku')figudokuUI?.enter();for(const e of document.querySelectorAll('.view'))e.hidden=e.id!==id;for(const b of document.querySelectorAll('nav [data-view]')){b.classList.toggle('active',b.dataset.view===(['tents','figudoku','play','result'].includes(id)?'home':id));b.setAttribute('aria-current',b.dataset.view===(['tents','figudoku','play','result'].includes(id)?'home':id)?'page':'false');}scrollToView(id,options);if(id==='tents')puzzleUI?.showTutorialIfFirst();if(id==='figudoku')figudokuUI?.showTutorialIfFirst();if(id==='play')mathTutorialVisit?.openIfFirst();}
 // Wait until the newly selected view and its dynamic content have been laid out.
 let navigationFrame=0;
 function scrollToView(id,{scroll=true}={}){
@@ -236,6 +237,6 @@ $('chooseFigudoku').onclick=()=>view('figudoku');
 
 
 
-const mathTutorial=document.createElement('dialog');mathTutorial.className='forest-tutorial';mathTutorial.setAttribute('aria-label','Как решать примеры');mathTutorial.innerHTML='<button class="dialog-close" aria-label="Закрыть обучение">×</button><span class="eyebrow">СНАЧАЛА ПРАВИЛА</span><h2>Решаем примеры</h2><ol class="tutorial-rules-list"><li>Посчитай ответ и введи его кнопками под примером или с клавиатуры.</li><li>Нажми «Проверить». Если ответ неверный, можно попробовать ещё раз.</li><li>Если трудно, нажми кнопку с лампочкой: появится подсказка.</li><li>Для карточки реши верно хотя бы 80% примеров (например, 8 из 10). В режиме «Просто порешать» тренируйся в своём темпе.</li></ol><p class="muted small">Подсказками пользоваться можно! Доступность новой карточки зависит от выбранного набора и уже полученных наград.</p><button class="primary">Попробуем! →</button>';document.body.append(mathTutorial);$('mathLearn').onclick=()=>{mathTutorial.showModal();mathTutorial.scrollTop=0;};for(const b of mathTutorial.querySelectorAll('button'))b.onclick=()=>mathTutorial.close();
+const mathTutorial=document.createElement('dialog');mathTutorial.className='forest-tutorial';mathTutorial.setAttribute('aria-label','Как решать примеры');mathTutorial.innerHTML='<button class="dialog-close" aria-label="Закрыть обучение">×</button><span class="eyebrow">СНАЧАЛА ПРАВИЛА</span><h2>Решаем примеры</h2><ol class="tutorial-rules-list"><li>Посчитай ответ и введи его кнопками под примером или с клавиатуры.</li><li>Нажми «Проверить». Если ответ неверный, можно попробовать ещё раз.</li><li>Если трудно, нажми кнопку с лампочкой: появится подсказка.</li><li>Для карточки реши верно хотя бы 80% примеров (например, 8 из 10). В режиме «Просто порешать» тренируйся в своём темпе.</li></ol><p class="muted small">Подсказками пользоваться можно! Доступность новой карточки зависит от выбранного набора и уже полученных наград.</p><button class="primary">Попробуем! →</button>';document.body.append(mathTutorial);mathTutorialVisit=tutorialVisit('math',()=>{if(!mathTutorial.open){mathTutorial.showModal();mathTutorial.scrollTop=0;}});$('mathLearn').onclick=mathTutorialVisit.open;for(const b of mathTutorial.querySelectorAll('button'))b.onclick=()=>mathTutorial.close();
 
 $('mathLearnWide').onclick=()=>$('mathLearn').click();
