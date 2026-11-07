@@ -41,7 +41,7 @@ function renderMissions(){
   const card=el('article','mission');theme(card,m);
   const art=el('div','mission-art');if(worldId==='space')art.append(el('div','planet',m.symbol));else{const pic=el('div','mission-pet');pic.innerHTML=portrait(artifacts.find(a=>a.mission===m.id));art.append(pic,el('span','math-sticker',m.symbol));}art.setAttribute('aria-hidden','true');
   if(n===total)art.append(el('span','mission-complete','Коллекция собрана ✓'));
-  const body=el('div','mission-body');body.append(el('span','mission-num',`МИССИЯ 0${i+1}`),el('h3','',m.title),el('p','','Собирай набор всеми тремя способами: примеры, палатки и фигудоку.'));
+  const body=el('div','mission-body');body.append(el('span','mission-num',`МИССИЯ 0${i+1}`),el('h3','',m.title));
   const meta=el('div','mission-meta');meta.append(el('span','',`Сложность: ${difficulty(m)}`),el('span','',`${world.collectionIcon} ${n}/${total} · +10 ${world.unit[2]}`));
   const b=el('button','',n===total?'Набор собран ✓':'Выбрать набор →');b.onclick=()=>{selectedSets[worldId]=m.id;renderActivity();$('activityHub').scrollIntoView({behavior:'smooth',block:'start'});};body.append(meta,b);card.append(art,body);$('missions').append(card);
  }
