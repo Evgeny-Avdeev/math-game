@@ -30,7 +30,7 @@ function scrollToView(id,{scroll=true}={}){
  if(!scroll){window.scrollTo({top:0,behavior:'instant'});return;}
  if(!matchMedia('(max-width:600px)').matches){window.scrollTo({top:0,behavior:'instant'});return;}
  navigationFrame=requestAnimationFrame(()=>{
-  const selectors={home:'#activityHub',play:'#play .prompt',tents:'#tents .forest-remaining',figudoku:'#figudoku .forest-remaining',collection:'#collection .section-head',free:'#free .free-card',result:'#result .result-card'};
+  const selectors={home:'#activityHub',play:'#play .game-card',tents:'#tents .game-card',figudoku:'#figudoku .game-card',collection:'#collection .section-head',free:'#free .section-head',result:'#result .result-card'};
   const target=document.querySelector(selectors[id]||'#'+id);
   if(!target||target.closest('[hidden]'))return;
   const top=Math.max(0,target.getBoundingClientRect().top+window.scrollY-12);
