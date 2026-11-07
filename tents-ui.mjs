@@ -1,19 +1,19 @@
-import {mountPuzzleGuide} from './activity-guide.mjs?v=responsive-buddy-1';
+import {mountActivityShell} from './activity-shell.mjs?v=1';
+import {activityDefinitions} from './activity-definitions.mjs?v=1';
 import {rewardMessage} from './game.mjs?v=teams-repair2-20261107';
 const analyticsModule=import('./analytics.mjs?v=1').catch(()=>null);
 function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).catch(()=>{});}
 import {puzzleSize,nextPuzzle} from './tents-sequence.mjs?v=1';
-import {addTutorial} from './tents-tutorial.mjs?v=first-visit-20261108';
+import {addTutorial} from './tents-tutorial.mjs?v=activity-template-1';
 import {puzzles} from './tents-data.mjs?v=1';
 import {inspect} from './tents-engine.mjs?v=1';
 export function mountTents(root,{context,reward,openCollection,openActivities}){
  const $=id=>root.querySelector('#'+id);let p,marks=[],history=[],locked=false,draftKey='',hintCell=-1;
- root.innerHTML=`<button class="text-button" id="forestBack">← Выбрать занятие</button><div class="forest-current-goal"><span class="eyebrow">ПРОДОЛЖАЕМ СОБИРАТЬ КОЛЛЕКЦИЮ</span><b id="forestSetTitle"></b><span id="forestSetProgress"></span></div><div class="game-card forest-game"><div class="game-heading"><div><span class="eyebrow">ЛОГИКА И НОВЫЕ ОТКРЫТИЯ</span><h1>Деревья и палатки</h1></div><div class="game-learning"></div></div><div class="forest-settings"><div><span class="small muted">Размер поля</span><b id="forestSize"></b></div><div><span class="small muted">Головоломка</span><b id="forestPuzzle"></b></div></div>
+ const guide=mountActivityShell(root,{definition:activityDefinitions.tents,context,backId:'forestBack',titleId:'forestSetTitle',progressId:'forestSetProgress',hintId:'forestHint',nextId:'forestNext',onBack:openActivities,gameHTML:`<div class="forest-settings"><div><span class="small muted">Размер поля</span><b id="forestSize"></b></div><div><span class="small muted">Головоломка</span><b id="forestPuzzle"></b></div></div>
  <p class="forest-instruction">Нажимай на клетку: ⛺ палатка → · трава → пусто.</p>
  <div class="forest-remaining" role="status" aria-live="polite" aria-atomic="true"><span aria-hidden="true">⛺</span><div><span id="forestRemainingLabel">Осталось поставить</span><strong id="forestRemaining"></strong></div></div><div id="forestBoard" class="forest-board" aria-label="Игровое поле"></div><div class="forest-status"><span id="forestDone"></span></div>
  <div id="forestFeedback" class="forest-feedback" role="status" aria-live="polite" hidden></div><div class="forest-actions"><button class="primary" id="forestCheck">Проверить лагерь ✓</button><button class="secondary" id="forestUndo">↶ Отменить</button><button class="secondary" id="forestHint">💡 Подсказка</button><button class="text-button" id="forestReset">Начать заново</button></div>
- <div id="forestWin" class="forest-win" hidden><div id="forestPrize"></div><button class="primary" id="forestNext">Следующая головоломка →</button><button class="text-button" id="forestCollection">Открыть коллекцию</button></div><p id="forestSave" class="small muted" hidden></p></div>`;
- const guide=mountPuzzleGuide(root,{context,mode:'tents'});
+ <div id="forestWin" class="forest-win" hidden><div id="forestPrize"></div><button class="primary" id="forestNext">Следующая головоломка →</button><button class="text-button" id="forestCollection">Открыть коллекцию</button></div><p id="forestSave" class="small muted" hidden></p>`});
  function message(s){guide.say(s);$('forestFeedback').textContent=s;$('forestFeedback').hidden=!s;}
  function persist(){try{localStorage.setItem(draftKey,JSON.stringify({id:p.id,marks,size:p.n,mission:context().targetMission.id}));}catch{$('forestSave').textContent='Сохранение недоступно: не закрывай страницу до конца игры.';$('forestSave').hidden=false;}}
  function load(id,saved){p=puzzles.find(p=>p.id===id)||puzzles[0];marks=Array.isArray(saved)&&saved.length===p.n*p.n?saved.map((v,i)=>p.trees.includes(i)?0:[0,1,2].includes(v)?v:0):Array(p.n*p.n).fill(0);history=[];locked=false;hintCell=-1;track('game_start',{world:context().id,game:'tents'});$('forestWin').hidden=true;message('');draw();persist();complete();}

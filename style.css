@@ -150,3 +150,11 @@ nav{flex-wrap:wrap;gap:5px}.nav{font-size:14px}.forest-invite{display:flex;align
  .math-game .equation{font-size:clamp(28px,4vw,40px);gap:8px}.math-game .answer{width:80px;height:68px;font-size:36px}.math-game .help-row{gap:14px}.math-game .check-button{min-width:0}
 }
 @media(max-width:600px){.math-sidebar>.guide-learn{display:none}}
+
+/* Every registered future activity inherits the same responsive page frame. */
+[data-activity]>.forest-current-goal{max-width:760px;margin:10px auto 18px;padding:14px 20px}
+[data-activity]>.text-button{display:block;max-width:760px;width:100%;margin:0 auto;text-align:left;padding-left:0}
+@media(min-width:601px){[data-activity]>.forest-current-goal{max-width:none;margin:10px 0 18px}[data-activity]>.text-button{max-width:none}}
+.forest-actions>[data-activity-action="check"],.forest-actions>[data-activity-action="reset"]{grid-column:1/-1}
+.forest-actions>[data-activity-action="reset"]{border:2px solid var(--outline);border-radius:14px;background:var(--bg);margin:0}
+.activity-board-slot{min-width:0;max-width:100%;margin:20px auto}

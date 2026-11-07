@@ -1,8 +1,11 @@
-import {tutorialVisit} from './tutorial-visit.mjs?v=1';
+import {createActivityRegistry} from './activity-registry.mjs?v=1';
+import {createActivityTutorial} from './activity-tutorial.mjs?v=1';
+import {applyActivityDefinition} from './activity-shell.mjs?v=1';
+import {activityDefinitions} from './activity-definitions.mjs?v=1';
 const analyticsModule=import('./analytics.mjs?v=1').catch(()=>null);
 function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).catch(()=>{});}
-import {mountFigudoku} from './figudoku-ui.mjs?v=pair-choice-1';
-import {mountTents} from './tents-ui.mjs?v=first-visit-20261108';
+import {mountFigudoku} from './figudoku-ui.mjs?v=activity-template-1';
+import {mountTents} from './tents-ui.mjs?v=activity-template-1';
 import {makeProblems,hint} from './math.mjs?v=15';
 import {badgeDefs,cleanProfile,settle,settlePuzzle,rewardStatus,rewardMessage,rewardModes} from './game.mjs?v=teams-repair2-20261107';
 import {worlds,getWorld,amount} from './worlds.mjs?v=teams-repair2-20261107';
@@ -10,6 +13,8 @@ import {portrait} from './portraits.mjs?v=teams-repair2-20261107';
 const $=id=>document.getElementById(id);
 let worldId='space',world,missions,artifacts,profile,storageOK=true;
 let puzzleUI,figudokuUI,mathTutorialVisit;
+const activities=createActivityRegistry();
+activities.register('play',{showTutorialIfFirst:()=>mathTutorialVisit?.openIfFirst()});
 const selectedSets={};
 const profiles={};
 let footballMenuOpen=false;
@@ -23,7 +28,7 @@ let problems=[],records=[],index=0,streak=0,bestStreak=0,attempts=0,hinted=false
 function save(){profiles[worldId]=profile;try{localStorage.setItem(`schitay-${worldId}-v1`,JSON.stringify(profile));}catch{storageOK=false;}updateProfile();}
 function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e;}
 function theme(e,m){e.style.setProperty('--accent',m.accent);e.style.setProperty('--tint',m.tint);}
-function view(id,options={}){if(id==='tents')puzzleUI?.enter();if(id==='figudoku')figudokuUI?.enter();for(const e of document.querySelectorAll('.view'))e.hidden=e.id!==id;for(const b of document.querySelectorAll('nav [data-view]')){b.classList.toggle('active',b.dataset.view===(['tents','figudoku','play','result'].includes(id)?'home':id));b.setAttribute('aria-current',b.dataset.view===(['tents','figudoku','play','result'].includes(id)?'home':id)?'page':'false');}scrollToView(id,options);if(id==='tents')puzzleUI?.showTutorialIfFirst();if(id==='figudoku')figudokuUI?.showTutorialIfFirst();if(id==='play')mathTutorialVisit?.openIfFirst();}
+function view(id,options={}){activities.enter(id);for(const e of document.querySelectorAll('.view'))e.hidden=e.id!==id;for(const b of document.querySelectorAll('nav [data-view]')){b.classList.toggle('active',b.dataset.view===((activities.has(id)||id==='result')?'home':id));b.setAttribute('aria-current',b.dataset.view===((activities.has(id)||id==='result')?'home':id)?'page':'false');}scrollToView(id,options);activities.showTutorialIfFirst(id);}
 // Wait until the newly selected view and its dynamic content have been laid out.
 let navigationFrame=0;
 function scrollToView(id,{scroll=true}={}){
@@ -31,14 +36,14 @@ function scrollToView(id,{scroll=true}={}){
  if(!scroll){window.scrollTo({top:0,behavior:'instant'});return;}
  if(!matchMedia('(max-width:600px)').matches){window.scrollTo({top:0,behavior:'instant'});return;}
  navigationFrame=requestAnimationFrame(()=>{
-  const selectors={home:'#activityHub',play:'#play .game-card',tents:'#tents .game-card',figudoku:'#figudoku .game-card',collection:'#collection .section-head',free:'#free .section-head',result:'#result .result-card'};
-  const target=document.querySelector(selectors[id]||'#'+id);
+  const selectors={home:'#activityHub',collection:'#collection .section-head',free:'#free .section-head',result:'#result .result-card'};
+  const target=document.querySelector(activities.scrollSelector(id)||selectors[id]||'#'+id);
   if(!target||target.closest('[hidden]'))return;
   const top=Math.max(0,target.getBoundingClientRect().top+window.scrollY-12);
   window.scrollTo({top,behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'instant':'smooth'});
  });
 }
-document.addEventListener('click',e=>{if(e.target.closest('#forestNext'))scrollToView('tents');else if(e.target.closest('#figNext'))scrollToView('figudoku');});
+document.addEventListener('click',e=>{const next=e.target.closest('[data-activity-next]');if(next){const root=next.closest('.view[data-activity]');if(root)scrollToView(root.id);}});
 function updateProfile(){
  $('wallet').textContent=profile.stars;$('collectionCount').textContent=`${profile.items.length}/${artifacts.length}`;$('collectionTotal').textContent=`${profile.items.length} / ${artifacts.length}`;
  const level=Math.floor(profile.stars/50)+1;
@@ -205,12 +210,14 @@ puzzleUI=mountTents($('tents'),{
  reward:(id,set)=>{const result=settlePuzzle(profile,id,set,worldId);profile=result.profile;save();if(!result.already)celebrate();return {...result,image:result.reward?itemImage(result.reward,true):null};},
  openCollection:()=>requestView('collection')
 });
+activities.register('tents',puzzleUI);
 figudokuUI=mountFigudoku($('figudoku'),{
  context:()=>({id:worldId,world,missions,profile,targetMission:goalMission()}),
  openActivities:()=>requestView('home'),
  reward:(id,set)=>{const result=settlePuzzle(profile,id,set,worldId);profile=result.profile;save();if(!result.already)celebrate();return {...result,image:result.reward?itemImage(result.reward,true):null};},
  openCollection:()=>requestView('collection')
 });
+activities.register('figudoku',figudokuUI);
 if(location.hash==='#tents')view('home');
 
 function goalMission(){
@@ -237,6 +244,5 @@ $('chooseFigudoku').onclick=()=>view('figudoku');
 
 
 
-const mathTutorial=document.createElement('dialog');mathTutorial.className='forest-tutorial';mathTutorial.setAttribute('aria-label','Как решать примеры');mathTutorial.innerHTML='<button class="dialog-close" aria-label="Закрыть обучение">×</button><span class="eyebrow">СНАЧАЛА ПРАВИЛА</span><h2>Решаем примеры</h2><ol class="tutorial-rules-list"><li>Посчитай ответ и введи его кнопками под примером или с клавиатуры.</li><li>Нажми «Проверить». Если ответ неверный, можно попробовать ещё раз.</li><li>Если трудно, нажми кнопку с лампочкой: появится подсказка.</li><li>Для карточки реши верно хотя бы 80% примеров (например, 8 из 10). В режиме «Просто порешать» тренируйся в своём темпе.</li></ol><p class="muted small">Подсказками пользоваться можно! Доступность новой карточки зависит от выбранного набора и уже полученных наград.</p><button class="primary">Попробуем! →</button>';document.body.append(mathTutorial);mathTutorialVisit=tutorialVisit('math',()=>{if(!mathTutorial.open){mathTutorial.showModal();mathTutorial.scrollTop=0;}});$('mathLearn').onclick=mathTutorialVisit.open;for(const b of mathTutorial.querySelectorAll('button'))b.onclick=()=>mathTutorial.close();
-
-$('mathLearnWide').onclick=()=>$('mathLearn').click();
+applyActivityDefinition($('play'),activityDefinitions.math);
+mathTutorialVisit=createActivityTutorial($('play'),{definition:activityDefinitions.math,label:'Как решать примеры'}).visit;

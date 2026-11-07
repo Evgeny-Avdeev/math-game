@@ -1,20 +1,20 @@
-import {mountPuzzleGuide} from './activity-guide.mjs?v=responsive-buddy-1';
+import {mountActivityShell} from './activity-shell.mjs?v=1';
+import {activityDefinitions} from './activity-definitions.mjs?v=1';
 import {rewardMessage} from './game.mjs?v=teams-repair2-20261107';
 import {figudokuPuzzles} from './figudoku-data.mjs?v=1';
 import {figudokuLevel,levelNames,nextFigudoku,inspectFigudoku,figudokuPairUsed} from './figudoku-engine.mjs?v=pair-choice-1';
 import {shapeNames,shapeSVG,cellContents} from './figudoku-symbols.mjs?v=1';
-import {addFigudokuTutorial} from './figudoku-tutorial.mjs?v=pair-choice-1';
+import {addFigudokuTutorial} from './figudoku-tutorial.mjs?v=activity-template-1';
 const analyticsModule=import('./analytics.mjs?v=1').catch(()=>null);
 function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).catch(()=>{});}
 export function mountFigudoku(root,{context,reward,openCollection,openActivities}){
  const $=id=>root.querySelector('#'+id);let p,numbers=[],shapes=[],history=[],selected=0,locked=false,draftKey='',highlight=-1,showErrors=false;
- root.innerHTML=`<button class="text-button" id="figBack">← Выбрать занятие</button><div class="forest-current-goal"><span class="eyebrow">ПРОДОЛЖАЕМ СОБИРАТЬ КОЛЛЕКЦИЮ</span><b id="figSetTitle"></b><span id="figSetProgress"></span></div><div class="game-card forest-game"><div class="game-heading"><div><span class="eyebrow">ЦИФРЫ И ФИГУРЫ ДРУЖАТ</span><h1>Фигудоку</h1></div><div class="game-learning"></div></div><div class="forest-settings"><div><span class="small muted">Сложность и поле</span><b id="figSize"></b></div><div><span class="small muted">Головоломка</span><b id="figPuzzle"></b></div></div><p class="forest-instruction">Нажми клетку, затем выбери недостающую цифру или фигуру. Уже занятые пары недоступны.</p>
+ const guide=mountActivityShell(root,{definition:activityDefinitions.figudoku,context,backId:'figBack',titleId:'figSetTitle',progressId:'figSetProgress',hintId:'figHint',nextId:'figNext',onBack:openActivities,gameHTML:`<div class="forest-settings"><div><span class="small muted">Сложность и поле</span><b id="figSize"></b></div><div><span class="small muted">Головоломка</span><b id="figPuzzle"></b></div></div><p class="forest-instruction">Нажми клетку, затем выбери недостающую цифру или фигуру. Уже занятые пары недоступны.</p>
  <div class="forest-remaining" role="status" aria-live="polite"><span aria-hidden="true">✎</span><div><span>Осталось заполнить</span><strong id="figRemaining"></strong><span class="small"> цифр и фигур</span></div></div>
  <div class="fig-board" id="figBoard" aria-label="Поле Фигудоку"></div><p id="figSelected" class="fig-selected" aria-live="polite"></p><div id="figControls" class="fig-controls"><div><b>Цифра</b><div id="figNumbers" class="fig-palette"></div></div><div><b>Фигура</b><div id="figShapes" class="fig-palette"></div></div></div>
  <p class="small muted">Цифры можно вводить с клавиатуры. Стрелки — выбрать клетку, Delete — стереть свой ввод.</p><div id="figFeedback" class="forest-feedback" role="status" aria-live="polite" hidden></div>
  <div class="forest-actions"><button class="primary" id="figCheck">Проверить ✓</button><button class="secondary" id="figUndo">↶ Отменить</button><button class="secondary" id="figHint">💡 Подсказка</button><button class="text-button" id="figReset">Начать заново</button></div>
- <div class="forest-win" id="figWin" hidden><div id="figPrize"></div><button class="primary" id="figNext">Следующая головоломка →</button><button class="text-button" id="figCollection">Открыть коллекцию</button></div><p id="figSave" class="small muted" hidden></p></div>`;
- const guide=mountPuzzleGuide(root,{context,mode:'figudoku'});
+ <div class="forest-win" id="figWin" hidden><div id="figPrize"></div><button class="primary" id="figNext">Следующая головоломка →</button><button class="text-button" id="figCollection">Открыть коллекцию</button></div><p id="figSave" class="small muted" hidden></p>`});
  function message(s){guide.say(s);$('figFeedback').textContent=s;$('figFeedback').hidden=!s;}
  function persist(){try{localStorage.setItem(draftKey,JSON.stringify({id:p.id,numbers,shapes}));}catch{$('figSave').hidden=false;$('figSave').textContent='Сохранение недоступно: не закрывай страницу до конца игры.';}}
  function clean(a,given){return given.map((v,i)=>v||((Array.isArray(a)&&Number.isInteger(a[i])&&a[i]>=0&&a[i]<=p.n)?a[i]:0));}
