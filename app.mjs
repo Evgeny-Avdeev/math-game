@@ -202,7 +202,7 @@ function renderActivity(){
  $('activitySet').replaceChildren(...missions.map(set=>new Option(set.title,set.id)));$('activitySet').value=m.id;
  $('activityDifficulty').textContent=`Сложность: ${difficulty(m)}`;
  const items=artifacts.filter(a=>a.mission===m.id),owned=items.filter(a=>profile.items.includes(a.id)).length;
- $('activityProgress').textContent=`${m.title} · ${owned} из ${items.length} в коллекции`;
+ $('activityProgress').textContent=`Собрано: ${owned} из ${items.length}`;
  for(const mode of rewardModes){
   const status=rewardStatus(profile,m.id,mode,worldId),target=$(`${mode}ActivityGoal`);
   target.textContent=status.allowed?'Реши и получи карточку':'Только тренировка';
