@@ -1,11 +1,11 @@
 const analyticsModule=import('./analytics.mjs?v=1').catch(()=>null);
 function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).catch(()=>{});}
-import {mountFigudoku} from './figudoku-ui.mjs?v=3';
+import {mountFigudoku} from './figudoku-ui.mjs?v=reward-limits-20261107';
 import {figudokuLevel,levelNames} from './figudoku-engine.mjs?v=1';
 import {puzzleSize} from './tents-sequence.mjs?v=1';
-import {mountTents} from './tents-ui.mjs?v=figudoku-20261107';
+import {mountTents} from './tents-ui.mjs?v=reward-limits-20261107';
 import {makeProblems,hint} from './math.mjs?v=15';
-import {badgeDefs,cleanProfile,settle,settlePuzzle} from './game.mjs?v=figudoku-20261107';
+import {badgeDefs,cleanProfile,settle,settlePuzzle,rewardStatus,rewardMessage,rewardModes,rewardModeNames} from './game.mjs?v=reward-limits-20261107';
 import {worlds,getWorld,amount} from './worlds.mjs?v=8';
 import {portrait} from './portraits.mjs?v=8';
 const $=id=>document.getElementById(id);
@@ -40,7 +40,7 @@ function renderMissions(){
   const card=el('article','mission');theme(card,m);
   const art=el('div','mission-art');if(worldId==='space')art.append(el('div','planet',m.symbol));else{const pic=el('div','mission-pet');pic.innerHTML=portrait(artifacts.find(a=>a.mission===m.id));art.append(pic,el('span','math-sticker',m.symbol));}art.setAttribute('aria-hidden','true');
   if(n===total)art.append(el('span','mission-complete','Коллекция собрана ✓'));
-  const body=el('div','mission-body');body.append(el('span','mission-num',`МИССИЯ 0${i+1}`),el('h3','',m.title),el('p','','Собирай этот набор: решай примеры или головоломки.'));
+  const body=el('div','mission-body');body.append(el('span','mission-num',`МИССИЯ 0${i+1}`),el('h3','',m.title),el('p','','Собирай набор всеми тремя способами: примеры, палатки и фигудоку.'));
   const meta=el('div','mission-meta');meta.append(el('span','',`Сложность: ${difficulty(m)}`),el('span','',`${world.collectionIcon} ${n}/${total} · +10 ${world.unit[2]}`));
   const b=el('button','',n===total?'Набор собран ✓':'Выбрать набор →');b.onclick=()=>{selectedSets[worldId]=m.id;renderActivity();$('activityHub').scrollIntoView({behavior:'smooth',block:'start'});};body.append(meta,b);card.append(art,body);$('missions').append(card);
  }
@@ -60,9 +60,9 @@ function renderCollection(){
  $('badges').replaceChildren();
  for(const b of themedBadges()){const owned=profile.badges.includes(b.id);const card=el('div',`badge${owned?'':' locked'}`);card.append(el('span','',owned?b.icon:'🔒'),el('b','',b.name),el('p','',owned?'Получено! '+b.description:b.description));$('badges').append(card);}
 }
-function openArtifact(a,owned,m){const box=$('artifactDetail');box.replaceChildren();box.append(itemImage(a,owned),el('span','eyebrow',m.title),el('h2','',owned?a.name:worldId==='space'?'Здесь будет сокровище':'Здесь будет новый друг!'),el('p','',owned?a.story:`Выполняй это приключение: за каждую удачную игру ты откроешь ${world.collectibleAcc}. Или реши «Деревья и палатки» или «Фигудоку» для этого набора. Подсказками пользоваться можно!`));$('artifactDialog').showModal();}
+function openArtifact(a,owned,m){const box=$('artifactDetail');box.replaceChildren();box.append(itemImage(a,owned),el('span','eyebrow',m.title),el('h2','',owned?a.name:worldId==='space'?'Здесь будет сокровище':'Здесь будет новый друг!'),el('p','',owned?a.story:`Выполняй это приключение: за удачную игру ты можешь открыть ${world.collectibleAcc}. Или реши «Деревья и палатки» или «Фигудоку» для этого набора. Чтобы собрать набор, получи карточки всеми тремя способами. Одним способом — не больше 60% набора. Подсказками пользоваться можно!`));$('artifactDialog').showModal();}
 $('closeArtifact').onclick=()=>$('artifactDialog').close();
-function startMission(id){const m=missions.find(m=>m.id===id);missionId=id;origin='home';start(makeProblems(m.count,'mixed',m.level),m.title,`Собираем набор «${m.title}». Реши ${Math.ceil(m.count*.8)} из ${m.count} примеров · + и − и получи ${world.collectibleAcc}. Подсказки разрешены!`);}
+function startMission(id){const m=missions.find(m=>m.id===id);missionId=id;origin='home';start(makeProblems(m.count,'mixed',m.level),m.title,`Собираем набор «${m.title}». Реши ${Math.ceil(m.count*.8)} из ${m.count} примеров · + и − и получи ${world.collectibleAcc}. Подсказки разрешены! ${rewardMessage(rewardStatus(profile,id,'math',worldId))}`);}
 function start(list,title,goal){
  track('game_start',{world:worldId,game:'math'});
  problems=list;records=[];index=streak=bestStreak=earned=0;active=true;$('playTitle').textContent=title;$('goalText').textContent=goal;setCurrency($('sessionStars'),0);view('play');show();
@@ -111,7 +111,7 @@ function finish(){
  lastMistakes=records.filter(r=>!r.first).map(r=>r.p);
  $('resultTitle').textContent=result.success?'Миссия выполнена!':result.solved===0?'Первый шаг сделан!':'Ты отлично потрудился!';
  $('resultText').textContent=result.success?(worldId==='space'?'Космос стал понятнее, а коллекция — богаче!':(world.successText||'В твоей команде появился новый хвостатый друг!')):missionId?`Для награды нужно решить хотя бы ${Math.ceil(problems.length*.8)} из ${problems.length} примеров. Попробуй ещё: ${world.buddy} поможет!`:`Каждый решённый пример делает тебя увереннее. ${highFive()}`;
- if(result.success&&!result.reward)$('resultText').textContent=`Вся коллекция этого приключения уже у тебя! А ${world.currency} — награда за практику.`;
+ if(result.success&&!result.reward)$('resultText').textContent=`${rewardMessage(result.rewardStatus)} А ${world.currency} — награда за практику.`;
  setSpeech($('resultText'),$('resultText').textContent);
  $('resultStats').replaceChildren();for(const [v,t] of [[`+${result.stars}` ,world.unit[2]+' получено'],[`${result.solved}/${records.length}`,'решено примеров'],[records.filter(r=>r.first).length,'с первого раза']]){const d=el('div','result-stat');d.append(el('b','',v),el('span','',t));$('resultStats').append(d);}
  $('rewardBox').replaceChildren();$('rewardBox').hidden=!result.reward;if(result.reward){const a=result.reward;$('rewardBox').append(el('span','reward-label',world.rewardTitle||(worldId==='space'?'НОВЫЙ АРТЕФАКТ!':'НОВАЯ ПОРОДА В КОЛЛЕКЦИИ!')),itemImage(a,true),el('h2','',a.name),el('p','',a.story));}
@@ -194,6 +194,10 @@ function renderActivity(){
  $('activityProgress').textContent=`${m.title} · ${owned} из ${items.length} в коллекции`;
  const size=puzzleSize(missions,m.id);$('tentsActivityGoal').textContent=`Поле ${size} × ${size} · собери один лагерь — получи следующую карточку`;
  $('mathActivityGoal').textContent=`Реши ${Math.ceil(m.count*.8)} из ${m.count} примеров — получи следующую карточку`;
+ for(const mode of rewardModes){
+  const status=rewardStatus(profile,m.id,mode,worldId),target=$(`${mode}ActivityGoal`);
+  target.textContent=status.allowed?`${target.textContent} · получено ${status.counts[mode]}/${status.limit} этим способом${status.counts[mode]===0?' · попробуй обязательно!':''}`:rewardMessage(status);
+ }
  $('activityTitle').textContent=owned===items.length?'Набор собран! Продолжим играть?':'Как получим следующую карточку?';
 }
 $('activitySet').onchange=()=>{selectedSets[worldId]=$('activitySet').value;renderActivity();};
@@ -201,3 +205,4 @@ $('chooseMath').onclick=()=>startMission(goalMission().id);
 $('chooseTents').onclick=()=>view('tents');
 
 $('chooseFigudoku').onclick=()=>view('figudoku');
+

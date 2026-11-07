@@ -1,3 +1,4 @@
+import {rewardMessage} from './game.mjs?v=reward-limits-20261107';
 const analyticsModule=import('./analytics.mjs?v=1').catch(()=>null);
 function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).catch(()=>{});}
 import {puzzleSize,nextPuzzle} from './tents-sequence.mjs?v=1';
@@ -32,7 +33,7 @@ export function mountTents(root,{context,reward,openCollection,openActivities}){
  complete();};
  function complete(){
  if(locked||!inspect(p,marks).solved)return false;
- locked=true;track('game_complete',{world:context().id,game:'tents',solved:1});const result=reward(p.id,context().targetMission.id);draw();$('forestWin').hidden=false;$('forestPrize').replaceChildren();message(result.already?'Этот лагерь уже был решён. Продолжим со следующей головоломкой!':'Ура! Лагерь готов, все правила соблюдены!');const title=document.createElement('h2');title.textContent=result.already?'Отличная тренировка!':result.reward?'Новая награда в коллекции!':'Лагерь готов! +10';$('forestPrize').append(title);if(result.reward){const pic=document.createElement('div');pic.className='forest-prize-image';pic.append(result.image);const name=document.createElement('h3');name.textContent=result.reward.name;const story=document.createElement('p');story.textContent=result.reward.story;$('forestPrize').append(pic,name,story);}else{const note=document.createElement('p');note.textContent=result.already?'За это поле награда уже получена.':'Все карточки выбранного набора уже собраны. За новый лагерь получено 10 единиц награды!';$('forestPrize').append(note);}persist();return true;}
+ locked=true;track('game_complete',{world:context().id,game:'tents',solved:1});const result=reward(p.id,context().targetMission.id);draw();$('forestWin').hidden=false;$('forestPrize').replaceChildren();message(result.already?'Этот лагерь уже был решён. Продолжим со следующей головоломкой!':'Ура! Лагерь готов, все правила соблюдены!');const title=document.createElement('h2');title.textContent=result.already?'Отличная тренировка!':result.reward?'Новая награда в коллекции!':'Лагерь готов! +10';$('forestPrize').append(title);if(result.reward){const pic=document.createElement('div');pic.className='forest-prize-image';pic.append(result.image);const name=document.createElement('h3');name.textContent=result.reward.name;const story=document.createElement('p');story.textContent=result.reward.story;$('forestPrize').append(pic,name,story);}else{const note=document.createElement('p');note.textContent=result.already?'За это поле награда уже получена.':`${rewardMessage(result.rewardStatus)} За новый лагерь получено 10 единиц награды!`;$('forestPrize').append(note);}persist();return true;}
  $('forestNext').onclick=()=>{const ctx=context();load(nextPuzzle(puzzles,puzzleSize(ctx.missions,ctx.targetMission.id),ctx.profile.puzzles,p.id).id);};$('forestCollection').onclick=openCollection;
  function updateGoal(){const ctx=context();
  if(p){$('forestSize').textContent=`${p.n} × ${p.n}`;const list=puzzles.filter(a=>a.n===p.n);$('forestPuzzle').textContent=`№ ${list.findIndex(a=>a.id===p.id)+1} из ${list.length}`;}
@@ -51,3 +52,4 @@ export function mountTents(root,{context,reward,openCollection,openActivities}){
  addTutorial(root);
  return {enter};
 }
+
