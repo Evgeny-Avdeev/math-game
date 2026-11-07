@@ -20,7 +20,7 @@ export function cleanProfile(raw,worldId='space'){
  const p=emptyProfile();
  if(!raw||typeof raw!=='object')return p;
  for(const k of ['stars','solved','completed','bestStreak'])if(Number.isSafeInteger(raw[k])&&raw[k]>=0)p[k]=raw[k];
- p.puzzles=[...new Set(Array.isArray(raw.puzzles)?raw.puzzles:[])].filter(id=>typeof id==='string'&&/^forest-(5|6|8)-([1-9]|1[0-9]|2[0-4])$/.test(id));
+ p.puzzles=[...new Set(Array.isArray(raw.puzzles)?raw.puzzles:[])].filter(id=>typeof id==='string'&&/^(?:forest-(?:5|6|8)|figudoku-(?:easy|medium|hard))-([1-9]|1[0-9]|2[0-4])$/.test(id));
  p.items=[...new Set(Array.isArray(raw.items)?raw.items:[])].filter(id=>artifacts.some(a=>a.id===id));
  p.badges=[...new Set(Array.isArray(raw.badges)?raw.badges:[])].filter(id=>badgeDefs.some(a=>a.id===id));
  // Credit existing progress when new achievements become available.
@@ -43,7 +43,7 @@ export function settle(profile,records,missionId,bestStreak,worldId='space'){
 
 export function settlePuzzle(profile,puzzleId,missionId,worldId='space'){
  const p=cleanProfile(profile,worldId),{missions,artifacts}=getWorld(worldId);
- if(!/^forest-(5|6|8)-([1-9]|1[0-9]|2[0-4])$/.test(puzzleId)||!missions.some(m=>m.id===missionId))throw new Error('Unknown puzzle or collection');
+ if(!/^(?:forest-(?:5|6|8)|figudoku-(?:easy|medium|hard))-([1-9]|1[0-9]|2[0-4])$/.test(puzzleId)||!missions.some(m=>m.id===missionId))throw new Error('Unknown puzzle or collection');
  if(p.puzzles.includes(puzzleId))return {profile:p,already:true,reward:null};
  p.puzzles.push(puzzleId);p.stars+=10;p.completed++;
  const reward=artifacts.find(a=>a.mission===missionId&&!p.items.includes(a.id))||null;

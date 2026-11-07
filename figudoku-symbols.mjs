@@ -1,0 +1,4 @@
+export const shapeNames=['','круг','квадрат','треугольник','пятиугольник','ромб','звезда','шестиугольник','сердце'];
+const paths=['','<circle cx="30" cy="30" r="24"/>','<rect x="7" y="7" width="46" height="46" rx="2"/>','<path d="M30 3 57 54H3Z"/>','<path d="M30 3 57 23 47 55H13L3 23Z"/>','<path d="M30 3 55 30 30 57 5 30Z"/>','<path d="m30 2 8 18 20 2-15 14 5 21-18-11-18 11 5-21L2 22l20-2Z"/>','<path d="M17 5H43L57 30 43 55H17L3 30Z"/>','<path d="M30 54 7 32C-10 10 20-3 30 15 40-3 70 10 53 32Z"/>'];
+export function shapeSVG(value){return `<svg viewBox="0 0 60 60" aria-hidden="true" class="fig-shape">${paths[value]||''}</svg>`;}
+export function cellContents(number,shape,givenNumber=false,givenShape=false){return `${shapeSVG(shape)}<span class="fig-number${givenNumber?' given':''}${shape?'':' alone'}">${number||''}</span>${givenShape?'<span class="fig-given-mark" aria-hidden="true">·</span>':''}`;}
