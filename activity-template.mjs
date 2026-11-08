@@ -28,7 +28,21 @@ export function mountActivityTemplate(root,{definition,context,openActivities,op
  function check(){const status=engine.inspect(task,state);if(!status.solved){message(status.message||'Попробуй ещё — у тебя получится!');return;}if(locked)return;locked=true;persist();draw();const result=complete(task.id,context().targetMission.id);$('win').hidden=false;$('prize').textContent=result?.message||'Задание решено!';message('Готово! Можно перейти к следующему заданию.');}
  function change(next){if(locked)return;history.push(copy(state));state=copy(next);message();persist();draw();if(engine.inspect(task,state).solved)check();}
  function load(next,saved){task=next;state=engine.initial(task);if(saved?.id===task.id&&engine.validateState?.(task,saved.state))state=copy(saved.state);history=[];locked=false;$('win').hidden=true;message();draw();}
- function enter(){const ctx=context(),nextKey=`schitay-task-${id}-${ctx.id}-${ctx.targetMission.id}-v1`;if(key===nextKey&&task){draw();return;}key=nextKey;const next=engine.next(ctx);let saved;try{saved=JSON.parse(localStorage.getItem(key)||'null');}catch{}load(next,saved);}
+ function enter(){
+  const ctx=context(),nextKey=`schitay-task-${id}-${ctx.id}-${ctx.targetMission.id}-v1`;
+  if(key===nextKey&&task&&!locked){draw();return;}
+  const previousId=key===nextKey&&locked?task?.id:undefined;
+  key=nextKey;
+  let saved;try{saved=JSON.parse(localStorage.getItem(key)||'null');}catch{}
+  let next=engine.next(ctx,previousId);
+  // Completed drafts may be selected again when the engine runs out of new tasks.
+  // Replay starts clean; only unfinished drafts are restored (including old v1 saves).
+  if(saved?.id===next.id&&engine.validateState?.(next,saved.state)&&engine.inspect(next,saved.state).solved){
+   if(previousId===undefined)next=engine.next(ctx,saved.id);
+   saved=undefined;
+  }
+  load(next,saved);persist();
+ }
  $('check').onclick=check;$('undo').onclick=()=>{if(!locked&&history.length){state=history.pop();message();persist();draw();}};
  $('hint').onclick=()=>{if(!locked&&engine.hint)message(engine.hint(task,copy(state)));};
  $('reset').onclick=()=>{if(!locked)change(engine.initial(task));};
