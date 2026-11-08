@@ -4,7 +4,7 @@ import {applyActivityDefinition} from './activity-shell.mjs?v=1';
 import {activityDefinitions} from './activity-definitions.mjs?v=1';
 const analyticsModule=import('./analytics.mjs?v=1').catch(()=>null);
 function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).catch(()=>{});}
-import {mountFigudoku} from './figudoku-ui.mjs?v=activity-template-1';
+import {mountFigudoku} from './figudoku-ui.mjs?v=hard-pairs-1';
 import {mountTents} from './tents-ui.mjs?v=activity-template-1';
 import {makeProblems,hint} from './math.mjs?v=15';
 import {badgeDefs,cleanProfile,settle,settlePuzzle,rewardStatus,rewardMessage,rewardModes} from './game.mjs?v=teams-repair2-20261107';

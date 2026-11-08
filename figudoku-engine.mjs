@@ -21,8 +21,8 @@ export function countFigudokuSolutions(p,limit=2,budget=500000){const n=p.n,L=n*
  search();return count;}
 
 // Exclude the edited cell: only complete pairs elsewhere reserve a choice.
-export function figudokuPairUsed(numbers,shapes,selected,type,value){
- if(!value)return false;
+export function figudokuPairUsed(numbers,shapes,selected,type,value,boardSize=8){
+ if(boardSize!==8||!value)return false;
  const number=type==='number'?value:numbers[selected],shape=type==='shape'?value:shapes[selected];
  return !!number&&!!shape&&numbers.some((v,i)=>i!==selected&&v===number&&shapes[i]===shape);
 }
