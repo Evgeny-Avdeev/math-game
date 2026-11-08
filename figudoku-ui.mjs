@@ -1,3 +1,4 @@
+import {createActivityLifecycle} from './activity-lifecycle.mjs?v=1';
 import {mountActivityShell} from './activity-shell.mjs?v=1';
 import {activityDefinitions} from './activity-definitions.mjs?v=clear-givens-1';
 import {rewardMessage} from './game.mjs?v=teams-repair2-20261107';
@@ -8,7 +9,7 @@ import {addFigudokuTutorial} from './figudoku-tutorial.mjs?v=clear-givens-1';
 const analyticsModule=import('./analytics.mjs?v=1').catch(()=>null);
 function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).catch(()=>{});}
 export function mountFigudoku(root,{context,reward,openCollection,openActivities}){
- const $=id=>root.querySelector('#'+id);let p,numbers=[],shapes=[],history=[],selected=0,locked=false,draftKey='',highlight=-1,showErrors=false;
+ const $=id=>root.querySelector('#'+id);let p,numbers=[],shapes=[],history=[],selected=0,locked=false,highlight=-1,showErrors=false;
  const guide=mountActivityShell(root,{definition:activityDefinitions.figudoku,context,backId:'figBack',titleId:'figSetTitle',progressId:'figSetProgress',hintId:'figHint',nextId:'figNext',onBack:openActivities,gameHTML:`<div class="forest-settings"><div><span class="small muted">Сложность и поле</span><b id="figSize"></b></div><div><span class="small muted">Головоломка</span><b id="figPuzzle"></b></div></div><p class="forest-instruction">Нажми клетку, затем выбери недостающую цифру или фигуру. На поле 8 × 8 уже занятые пары недоступны.</p>
  <div class="forest-remaining" role="status" aria-live="polite"><span aria-hidden="true">✎</span><div><span>Осталось заполнить</span><strong id="figRemaining"></strong><span class="small"> цифр и фигур</span></div></div>
  <div class="fig-board" id="figBoard" aria-label="Поле Фигудоку"></div><p id="figSelected" class="fig-selected" aria-live="polite"></p><div id="figControls" class="fig-controls"><div><b>Цифра</b><div id="figNumbers" class="fig-palette"></div></div><div><b>Фигура</b><div id="figShapes" class="fig-palette"></div></div></div>
@@ -16,9 +17,9 @@ export function mountFigudoku(root,{context,reward,openCollection,openActivities
  <div class="forest-actions"><button class="primary" id="figCheck">Проверить ✓</button><button class="secondary" id="figUndo">↶ Отменить</button><button class="secondary" id="figHint">💡 Подсказка</button><button class="text-button" id="figReset">Начать заново</button></div>
  <div class="forest-win" id="figWin" hidden><div id="figPrize"></div><button class="primary" id="figNext">Следующая головоломка →</button><button class="text-button" id="figCollection">Открыть коллекцию</button></div><p id="figSave" class="small muted" hidden></p>`});
  function message(s){guide.say(s);$('figFeedback').textContent=s;$('figFeedback').hidden=!s;}
- function persist(){try{localStorage.setItem(draftKey,JSON.stringify({id:p.id,numbers,shapes}));}catch{$('figSave').hidden=false;$('figSave').textContent='Сохранение недоступно: не закрывай страницу до конца игры.';}}
+ function persist(){lifecycle.persist();}
  function clean(a,given){return given.map((v,i)=>v||((Array.isArray(a)&&Number.isInteger(a[i])&&a[i]>=0&&a[i]<=p.n)?a[i]:0));}
- function load(next,saved){p=next;numbers=clean(saved?.numbers,p.numbers);shapes=clean(saved?.shapes,p.shapes);selected=p.numbers.findIndex((v,i)=>!v||!p.shapes[i]);history=[];locked=false;highlight=-1;showErrors=false;message('');$('figWin').hidden=true;track('game_start',{world:context().id,game:'figudoku'});draw();persist();complete();}
+ function load(next,saved){p=next;numbers=clean(saved?.numbers,p.numbers);shapes=clean(saved?.shapes,p.shapes);selected=p.numbers.findIndex((v,i)=>!v||!p.shapes[i]);history=[];locked=false;highlight=-1;showErrors=false;message('');$('figWin').hidden=true;track('game_start',{world:context().id,game:'figudoku'});draw();}
  function draw(){guide.update();const ctx=context(),state=inspectFigudoku(p,numbers,shapes),items=ctx.world.artifacts.filter(a=>a.mission===ctx.targetMission.id);
  $('figSetTitle').textContent=ctx.targetMission.title;$('figSetProgress').textContent=`${items.filter(a=>ctx.profile.items.includes(a.id)).length} из ${items.length} · одна новая головоломка — одна карточка`;
 
@@ -31,16 +32,27 @@ export function mountFigudoku(root,{context,reward,openCollection,openActivities
  }
  function change(type,v){const given=type==='number'?p.numbers:p.shapes,a=type==='number'?numbers:shapes;if(locked||given[selected]||a[selected]===v||figudokuPairUsed(numbers,shapes,selected,type,v,p.n))return;history.push({numbers:[...numbers],shapes:[...shapes]});a[selected]=v;highlight=-1;showErrors=false;message('');draw();persist();complete();}
  function erase(){if(locked||p.numbers[selected]&&p.shapes[selected])return;history.push({numbers:[...numbers],shapes:[...shapes]});if(!p.numbers[selected])numbers[selected]=0;if(!p.shapes[selected])shapes[selected]=0;showErrors=false;highlight=-1;message('');draw();persist();}
- function complete(){if(locked||!inspectFigudoku(p,numbers,shapes).solved)return;locked=true;track('game_complete',{world:context().id,game:'figudoku',solved:1});const result=reward(p.id,context().targetMission.id);draw();$('figWin').hidden=false;const prize=$('figPrize');prize.replaceChildren();const h=document.createElement('h2');h.textContent=result.already?'Отличная тренировка!':result.reward?'Новая карточка в коллекции!':'Готово! +10';prize.append(h);if(result.reward){const image=document.createElement('div');image.className='forest-prize-image';image.append(result.image);const name=document.createElement('h3'),story=document.createElement('p');name.textContent=result.reward.name;story.textContent=result.reward.story;prize.append(image,name,story);}message(result.already?'Это поле уже решено. За повтор новая награда не выдаётся.':'Ура! Все цифры, фигуры и пары на своих местах!'+(result.reward?'':` ${rewardMessage(result.rewardStatus)} Получи 10 единиц награды.`));persist();}
+ function complete(){return lifecycle.complete();}
+ function showCompletion(){track('game_complete',{world:context().id,game:'figudoku',solved:1});const result=reward(p.id,context().targetMission.id);draw();$('figWin').hidden=false;const prize=$('figPrize');prize.replaceChildren();const h=document.createElement('h2');h.textContent=result.already?'Отличная тренировка!':result.reward?'Новая карточка в коллекции!':'Готово! +10';prize.append(h);if(result.reward){const image=document.createElement('div');image.className='forest-prize-image';image.append(result.image);const name=document.createElement('h3'),story=document.createElement('p');name.textContent=result.reward.name;story.textContent=result.reward.story;prize.append(image,name,story);}message(result.already?'Это поле уже решено. За повтор новая награда не выдаётся.':'Ура! Все цифры, фигуры и пары на своих местах!'+(result.reward?'':` ${rewardMessage(result.rewardStatus)} Получи 10 единиц награды.`));persist();}
  $('figBack').onclick=openActivities;$('figCollection').onclick=openCollection;
  $('figUndo').onclick=()=>{const old=history.pop();if(old&&!locked){numbers=old.numbers;shapes=old.shapes;highlight=-1;showErrors=false;message('');draw();persist();}};
  $('figReset').onclick=()=>{if(locked)return;history.push({numbers:[...numbers],shapes:[...shapes]});numbers=[...p.numbers];shapes=[...p.shapes];highlight=-1;showErrors=false;message('');draw();persist();};
  $('figCheck').onclick=()=>{const state=inspectFigudoku(p,numbers,shapes);showErrors=true;draw();if(state.solved)complete();else message(state.bad.size?'В выделенных клетках есть повтор: проверь цифры и фигуры в строках, столбцах и блоках, а также пары на всём поле.':`Повторов пока нет! Осталось заполнить ${state.missing} цифр и фигур.`);};
  $('figHint').onclick=()=>{const i=numbers.findIndex((v,i)=>v!==p.solutionNumbers[i]||shapes[i]!==p.solutionShapes[i]);if(i<0)return complete();selected=highlight=i;draw();message(`Посмотри на выделенную клетку: строка ${Math.floor(i/p.n)+1}, столбец ${i%p.n+1}. Здесь ${shapeNames[p.solutionShapes[i]]} с цифрой ${p.solutionNumbers[i]}. Сравни со строкой, столбцом, блоком и уже заполненными парами.`);};
- $('figNext').onclick=()=>{const ctx=context();load(nextFigudoku(figudokuPuzzles,figudokuLevel(ctx.missions,ctx.targetMission.id),(ctx.solvedPuzzles??ctx.profile.puzzles),p.id));};
+ $('figNext').onclick=()=>lifecycle.next();
  const tutorial=addFigudokuTutorial(root);
- return {showTutorialIfFirst:tutorial.openIfFirst,enter(){const ctx=context(),level=figudokuLevel(ctx.missions,ctx.targetMission.id),key=`schitay-figudoku-${ctx.id}-${ctx.targetMission.id}-v1`;if(draftKey===key&&p&&!locked&&!(ctx.solvedPuzzles??ctx.profile.puzzles).includes(p.id)){draw();return;}draftKey=key;let saved;try{saved=JSON.parse(localStorage.getItem(key)||'null');}catch{}const next=nextFigudoku(figudokuPuzzles,level,(ctx.solvedPuzzles??ctx.profile.puzzles)),savedPuzzle=figudokuPuzzles.find(a=>a.id===saved?.id&&a.level===level&&!(ctx.solvedPuzzles??ctx.profile.puzzles).includes(a.id));load(savedPuzzle||next,savedPuzzle?saved:null);}};
+ const lifecycle=createActivityLifecycle({
+  key:()=>{const ctx=context();return `schitay-figudoku-${ctx.id}-${ctx.targetMission.id}-v1`;},
+  id:()=>p.id,stale:()=> (context().solvedPuzzles??context().profile.puzzles).includes(p.id),
+  render:draw,snapshot:()=>({id:p.id,numbers,shapes}),
+  load(saved,previousId){const ctx=context(),level=figudokuLevel(ctx.missions,ctx.targetMission.id),done=ctx.solvedPuzzles??ctx.profile.puzzles;
+   const draft=figudokuPuzzles.find(a=>a.id===saved?.id&&a.level===level&&!done.includes(a.id));
+   const next=draft||nextFigudoku(figudokuPuzzles,level,done,previousId);
+   const solved=Array.isArray(saved?.numbers)&&Array.isArray(saved?.shapes)&&inspectFigudoku(next,saved.numbers,saved.shapes).solved;
+   load(next,draft&&!solved?saved:null);
+  },
+  solved:()=>inspectFigudoku(p,numbers,shapes).solved,lock:()=>{locked=true;},complete:showCompletion,
+  onStorageError:()=>{$('figSave').textContent='Сохранение недоступно: не закрывай страницу до конца игры.';$('figSave').hidden=false;},
+ });
+ return {showTutorialIfFirst:tutorial.openIfFirst,enter:()=>lifecycle.enter()};
 }
-
-
-

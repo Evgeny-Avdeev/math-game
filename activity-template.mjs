@@ -1,3 +1,4 @@
+import {createActivityLifecycle} from './activity-lifecycle.mjs?v=1';
 import {mountActivityShell} from './activity-shell.mjs?v=1';
 import {createActivityTutorial} from './activity-tutorial.mjs?v=1';
 
@@ -17,35 +18,34 @@ export function mountActivityTemplate(root,{definition,context,openActivities,op
  <div class="forest-actions"><button class="primary" id="${id}-check" data-activity-action="check">Проверить ✓</button><button class="secondary" id="${id}-undo">↶ Отменить</button><button class="secondary" id="${id}-hint">💡 Подсказка</button><button class="text-button" id="${id}-reset" data-activity-action="reset">Начать заново</button></div>
  <div class="forest-win" id="${id}-win" hidden><h2>Отличная работа!</h2><p id="${id}-prize"></p><button class="primary" id="${id}-next">Следующее задание →</button><button class="text-button" id="${id}-collection">Открыть коллекцию</button></div>`});
  const tutorial=createActivityTutorial(root,{definition,practiceHTML});
- let task,state,history=[],key='',locked=false;
+ let task,state,history=[],locked=false;
  const copy=value=>JSON.parse(JSON.stringify(value));
  function message(text=''){const box=$('feedback');box.textContent=text;box.hidden=!text;guide.say(text);}
- function persist(){try{localStorage.setItem(key,JSON.stringify({id:task.id,state}));}catch{}}
+ function persist(){lifecycle.persist();}
  function draw(){const ctx=context(),status=engine.inspect(task,state);guide.update();root.querySelector(`#${id}-set-title`).textContent=ctx.targetMission.title;const items=ctx.world.artifacts.filter(a=>a.mission===ctx.targetMission.id);root.querySelector(`#${id}-set-progress`).textContent=`Собрано: ${items.filter(a=>ctx.profile.items.includes(a.id)).length} из ${items.length}`;
   $('level').textContent=task.difficulty||ctx.targetMission.title;$('number').textContent=task.label||task.id;$('instruction').textContent=definition.instruction||'';$('remaining').textContent=status.remaining??'—';
   engine.render($('board'),{task,state:copy(state),locked,onChange:change});$('undo').disabled=locked||!history.length;for(const action of ['check','hint','reset'])$(action).disabled=locked||action==='hint'&&!engine.hint;
  }
- function check(){const status=engine.inspect(task,state);if(!status.solved){message(status.message||'Попробуй ещё — у тебя получится!');return;}if(locked)return;locked=true;persist();draw();const result=complete(task.id,context().targetMission.id);$('win').hidden=false;$('prize').textContent=result?.message||'Задание решено!';message('Готово! Можно перейти к следующему заданию.');}
+ function check(){const status=engine.inspect(task,state);if(!status.solved){message(status.message||'Попробуй ещё — у тебя получится!');return;}lifecycle.complete();}
+
  function change(next){if(locked)return;history.push(copy(state));state=copy(next);message();persist();draw();if(engine.inspect(task,state).solved)check();}
  function load(next,saved){task=next;state=engine.initial(task);if(saved?.id===task.id&&engine.validateState?.(task,saved.state))state=copy(saved.state);history=[];locked=false;$('win').hidden=true;message();draw();}
- function enter(){
-  const ctx=context(),nextKey=`schitay-task-${id}-${ctx.id}-${ctx.targetMission.id}-v1`;
-  if(key===nextKey&&task&&!locked&&!(ctx.solvedPuzzles??ctx.profile.puzzles??[]).includes(task.id)){draw();return;}
-  const previousId=key===nextKey&&locked?task?.id:undefined;
-  key=nextKey;
-  let saved;try{saved=JSON.parse(localStorage.getItem(key)||'null');}catch{}
-  let next=engine.next(ctx,previousId);
-  // Completed drafts may be selected again when the engine runs out of new tasks.
-  // Replay starts clean; only unfinished drafts are restored (including old v1 saves).
-  if(saved?.id===next.id&&engine.validateState?.(next,saved.state)&&engine.inspect(next,saved.state).solved){
-   if(previousId===undefined)next=engine.next(ctx,saved.id);
-   saved=undefined;
-  }
-  load(next,saved);persist();
- }
+ const lifecycle=createActivityLifecycle({
+  key:()=>{const ctx=context();return `schitay-task-${id}-${ctx.id}-${ctx.targetMission.id}-v1`;},
+  id:()=>task.id,stale:()=> (context().solvedPuzzles??context().profile.puzzles??[]).includes(task.id),
+  render:draw,snapshot:()=>({id:task.id,state}),
+  load(saved,previousId){const ctx=context();let next=engine.next(ctx,previousId);
+   if(saved?.id===next.id&&engine.validateState?.(next,saved.state)&&engine.inspect(next,saved.state).solved){
+    if(previousId===undefined)next=engine.next(ctx,saved.id);saved=undefined;
+   }
+   load(next,saved);
+  },
+  solved:()=>engine.inspect(task,state).solved,lock:()=>{locked=true;},
+  complete(){draw();const result=complete(task.id,context().targetMission.id);$('win').hidden=false;$('prize').textContent=result?.message||'Задание решено!';message('Готово! Можно перейти к следующему заданию.');},
+ });
  $('check').onclick=check;$('undo').onclick=()=>{if(!locked&&history.length){state=history.pop();message();persist();draw();}};
  $('hint').onclick=()=>{if(!locked&&engine.hint)message(engine.hint(task,copy(state)));};
  $('reset').onclick=()=>{if(!locked)change(engine.initial(task));};
- $('next').onclick=()=>{load(engine.next(context(),task.id));persist();};$('collection').onclick=openCollection;
- return {enter,showTutorialIfFirst:tutorial.visit.openIfFirst};
+ $('next').onclick=()=>lifecycle.next();$('collection').onclick=openCollection;
+ return {enter:()=>lifecycle.enter(),showTutorialIfFirst:tutorial.visit.openIfFirst};
 }

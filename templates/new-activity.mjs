@@ -1,6 +1,6 @@
 // Copy this adapter for a real activity. Import your engine and call from app.mjs.
 // This file is deliberately not registered or imported by the production app.
-import {mountActivityTemplate} from '../activity-template.mjs?v=2';
+import {mountActivityTemplate} from '../activity-template.mjs?v=3';
 
 export function mountNewActivity(root,services,engine){
  const definition={
