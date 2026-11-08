@@ -14,6 +14,10 @@ export const badgeDefs=[
  {id:'eighteencards',icon:'💝',name:'Половина сокровищницы',description:'Собери 18 наград в коллекции',test:p=>p.items.length>=18},
  {id:'collector',icon:'🏆',name:'Хранитель сокровищ',description:'Собери все артефакты',test:p=>p.items.length===36}
 ];
+// Puzzle selection shares the existing completion history of every card world.
+export function solvedPuzzlesAcrossWorlds(profiles){
+ return [...new Set(Object.values(profiles).flatMap(p=>p?.puzzles||[]))];
+}
 export const emptyProfile=()=>({stars:0,solved:0,completed:0,bestStreak:0,items:[],badges:[],puzzles:[],itemSources:{}});
 export function cleanProfile(raw,worldId='space'){
  const {artifacts}=getWorld(worldId);
@@ -76,5 +80,6 @@ export function settlePuzzle(profile,puzzleId,missionId,worldId='space'){
  for(const b of badgeDefs)if(!p.badges.includes(b.id)&&(b.id==='collector'?p.items.length===artifacts.length:b.test(p)))p.badges.push(b.id);
  return {profile:p,already:false,reward,rewardStatus};
 }
+
 
 

@@ -4,10 +4,10 @@ import {applyActivityDefinition} from './activity-shell.mjs?v=1';
 import {activityDefinitions} from './activity-definitions.mjs?v=1';
 const analyticsModule=import('./analytics.mjs?v=1').catch(()=>null);
 function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).catch(()=>{});}
-import {mountFigudoku} from './figudoku-ui.mjs?v=hard-pairs-1';
-import {mountTents} from './tents-ui.mjs?v=activity-template-1';
+import {mountFigudoku} from './figudoku-ui.mjs?v=shared-puzzles-1';
+import {mountTents} from './tents-ui.mjs?v=shared-puzzles-1';
 import {makeProblems,hint} from './math.mjs?v=15';
-import {badgeDefs,cleanProfile,settle,settlePuzzle,rewardStatus,rewardMessage,rewardModes} from './game.mjs?v=teams-repair2-20261107';
+import {badgeDefs,solvedPuzzlesAcrossWorlds,cleanProfile,settle,settlePuzzle,rewardStatus,rewardMessage,rewardModes} from './game.mjs?v=shared-puzzles-1';
 import {worlds,getWorld,amount} from './worlds.mjs?v=teams-repair2-20261107';
 import {portrait} from './portraits.mjs?v=teams-repair2-20261107';
 const $=id=>document.getElementById(id);
@@ -204,15 +204,17 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeFootballMenu();});
 
+function puzzleContext(){return {id:worldId,world,missions,profile,solvedPuzzles:solvedPuzzlesAcrossWorlds(profiles),targetMission:goalMission()};}
+
 puzzleUI=mountTents($('tents'),{
- context:()=>({id:worldId,world,missions,profile,targetMission:goalMission()}),
+ context:puzzleContext,
  openActivities:()=>requestView('home'),
  reward:(id,set)=>{const result=settlePuzzle(profile,id,set,worldId);profile=result.profile;save();if(!result.already)celebrate();return {...result,image:result.reward?itemImage(result.reward,true):null};},
  openCollection:()=>requestView('collection')
 });
 activities.register('tents',puzzleUI);
 figudokuUI=mountFigudoku($('figudoku'),{
- context:()=>({id:worldId,world,missions,profile,targetMission:goalMission()}),
+ context:puzzleContext,
  openActivities:()=>requestView('home'),
  reward:(id,set)=>{const result=settlePuzzle(profile,id,set,worldId);profile=result.profile;save();if(!result.already)celebrate();return {...result,image:result.reward?itemImage(result.reward,true):null};},
  openCollection:()=>requestView('collection')
@@ -246,3 +248,4 @@ $('chooseFigudoku').onclick=()=>view('figudoku');
 
 applyActivityDefinition($('play'),activityDefinitions.math);
 mathTutorialVisit=createActivityTutorial($('play'),{definition:activityDefinitions.math,label:'Как решать примеры'}).visit;
+

@@ -30,7 +30,7 @@ export function mountActivityTemplate(root,{definition,context,openActivities,op
  function load(next,saved){task=next;state=engine.initial(task);if(saved?.id===task.id&&engine.validateState?.(task,saved.state))state=copy(saved.state);history=[];locked=false;$('win').hidden=true;message();draw();}
  function enter(){
   const ctx=context(),nextKey=`schitay-task-${id}-${ctx.id}-${ctx.targetMission.id}-v1`;
-  if(key===nextKey&&task&&!locked){draw();return;}
+  if(key===nextKey&&task&&!locked&&!(ctx.solvedPuzzles??ctx.profile.puzzles??[]).includes(task.id)){draw();return;}
   const previousId=key===nextKey&&locked?task?.id:undefined;
   key=nextKey;
   let saved;try{saved=JSON.parse(localStorage.getItem(key)||'null');}catch{}

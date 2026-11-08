@@ -42,7 +42,7 @@ function mount({count=3}={}){
   // Same exhaustion policy as figudoku: unfinished tasks, then another task for practice.
   next(context,previousId){
    calls.push({world:context.id,set:context.targetMission.id,previousId});
-   return tasks.find(task=>!context.profile.puzzles.includes(task.id)&&task.id!==previousId)
+   return tasks.find(task=>!(context.solvedPuzzles??context.profile.puzzles).includes(task.id)&&task.id!==previousId)
     ||tasks.find(task=>task.id!==previousId)||tasks[0];
   },
   initial:()=>({value:0}),
@@ -178,4 +178,32 @@ test('invalid or broken drafts start cleanly and unavailable storage does not br
  // Profile setup above reads storage; exercise the controller with storage blocked after mount.
  localStorage.getItem=()=>{throw Error('blocked');};localStorage.setItem=()=>{throw Error('blocked');};
  game.enter();game.change(1);game.leave();game.enter();assert.deepEqual(game.rendered.state,{value:1});
+});
+
+
+test('shared history skips a task solved in another world while its draft is in memory',t=>{
+ environment(t);const game=mount();game.ctx.solvedPuzzles=[];
+ game.enter();game.change(1);game.leave();
+ game.ctx.solvedPuzzles=['task-1'];game.enter();
+ assert.equal(game.rendered.task.id,'task-2');assert.deepEqual(game.rendered.state,{value:0});
+ assert.equal(game.rendered.locked,false);assert.equal(game.completions.length,0);
+ assert.deepEqual(game.ctx.profile.puzzles,[]);assert.equal(game.ctx.profile.rewards,0);
+});
+
+test('reload skips an unfinished legacy draft already solved in another world',t=>{
+ const data=environment(t);data.set(draftKey(),JSON.stringify({id:'task-1',state:{value:1}}));
+ const game=mount();game.ctx.solvedPuzzles=['task-1'];game.enter();
+ assert.equal(game.rendered.task.id,'task-2');assert.deepEqual(game.rendered.state,{value:0});
+ assert.deepEqual(JSON.parse(data.get(draftKey())),{id:'task-2',state:{value:0}});
+ assert.equal(game.completions.length,0);assert.deepEqual(game.ctx.profile.items,['existing-card']);
+});
+
+test('reentry and the next button both select the remaining task from shared history',t=>{
+ for(const action of ['reentry','next']){
+  environment(t);const game=mount();game.ctx.solvedPuzzles=['task-2'];
+  game.enter();game.change(2);game.ctx.solvedPuzzles.push('task-1');
+  if(action==='reentry'){game.leave();game.enter();}else game.button('next').click();
+  assert.equal(game.rendered.task.id,'task-3');assert.deepEqual(game.rendered.state,{value:0});
+  assert.equal(game.calls.at(-1).previousId,'task-1');assert.equal(game.ctx.profile.rewards,1);
+ }
 });
