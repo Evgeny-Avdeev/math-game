@@ -7,7 +7,7 @@ function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).ca
 import {mountFigudoku} from './figudoku-ui.mjs?v=clear-givens-1';
 import {mountTents} from './tents-ui.mjs?v=shared-puzzles-1';
 import {makeProblems,hint} from './math.mjs?v=15';
-import {badgeDefs,solvedPuzzlesAcrossWorlds,cleanProfile,settle,settlePuzzle,rewardStatus,rewardMessage,rewardModes} from './game.mjs?v=dogs-names-1';
+import {badgeDefs,currencyBalance,solvedPuzzlesAcrossWorlds,cleanProfile,settle,settlePuzzle,rewardStatus,rewardMessage,rewardModes} from './game.mjs?v=shared-wallet-1';
 import {worlds,getWorld,amount} from './worlds.mjs?v=dogs-names-1';
 import {portrait} from './portraits.mjs?v=teams-repair2-20261107';
 const $=id=>document.getElementById(id);
@@ -46,10 +46,11 @@ function scrollToView(id,{scroll=true}={}){
 }
 document.addEventListener('click',e=>{const next=e.target.closest('[data-activity-next]');if(next){const root=next.closest('.view[data-activity]');if(root)scrollToView(root.id);}});
 function updateProfile(){
- $('wallet').textContent=profile.stars;$('collectionCount').textContent=`${profile.items.length}/${artifacts.length}`;$('collectionTotal').textContent=`${profile.items.length} / ${artifacts.length}`;
- const level=Math.floor(profile.stars/50)+1;
+ const balance=currencyBalance(profiles,worldId);
+ $('wallet').textContent=balance;$('collectionCount').textContent=`${profile.items.length}/${artifacts.length}`;$('collectionTotal').textContent=`${profile.items.length} / ${artifacts.length}`;
+ const level=Math.floor(balance/50)+1;
  $('rank').textContent=world.rank[level<3?0:level<6?1:level<10?2:3];
- $('levelInfo').textContent=`Уровень ${level} · ${profile.stars%50} из 50 ${world.unit[2]} до следующего`;$('levelProgress').style.width=`${profile.stars%50*2}%`;
+ $('levelInfo').textContent=`Уровень ${level} · ${balance%50} из 50 ${world.unit[2]} до следующего`;$('levelProgress').style.width=`${balance%50*2}%`;
  $('totalSolved').textContent=profile.solved;$('totalMissions').textContent=profile.completed;
  $('storageNote').textContent=storageOK?'Коллекция сохраняется в этом браузере на этом устройстве.':'Браузер не разрешил сохранение. Коллекция доступна, пока открыта эта страница.';
  renderMissions();renderCollection();renderActivity();renderFootballMenu();renderDogMenu();

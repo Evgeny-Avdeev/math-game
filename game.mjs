@@ -18,6 +18,12 @@ export const badgeDefs=[
 export function solvedPuzzlesAcrossWorlds(profiles){
  return [...new Set(Object.values(profiles).flatMap(p=>p?.puzzles||[]))];
 }
+// Keep each collection's earned currency in its existing profile. Display the sum
+// for related collections, so old saves need no migration or duplicated balance.
+export function currencyBalance(profiles,worldId){
+ const group={dog:['dog','dogMore'],dogMore:['dog','dogMore'],football:['football','footballTeams'],footballTeams:['football','footballTeams']}[worldId]||[worldId];
+ return group.reduce((sum,id)=>sum+(profiles[id]?.stars||0),0);
+}
 export const emptyProfile=()=>({stars:0,solved:0,completed:0,bestStreak:0,items:[],badges:[],puzzles:[],itemSources:{}});
 export function cleanProfile(raw,worldId='space'){
  const {artifacts}=getWorld(worldId);
