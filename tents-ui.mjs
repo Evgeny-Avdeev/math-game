@@ -1,7 +1,7 @@
 import {createActivityLifecycle} from './activity-lifecycle.mjs?v=1';
 import {mountActivityShell} from './activity-shell.mjs?v=1';
 import {activityDefinitions} from './activity-definitions.mjs?v=1';
-import {rewardMessage} from './game.mjs?v=teams-repair2-20261107';
+import {rewardMessage} from './game.mjs?v=expanded-bank-1';
 const analyticsModule=import('./analytics.mjs?v=1').catch(()=>null);
 function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).catch(()=>{});}
 import {puzzleSize,nextPuzzle} from './tents-sequence.mjs?v=1';
