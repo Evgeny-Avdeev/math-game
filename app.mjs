@@ -98,7 +98,7 @@ function show(){
  $('streak').textContent=`🔥 ${streak} подряд`;$('dots').replaceChildren();
  for(let i=0;i<problems.length;i++){const d=el('span',`dot${i<index?(records[i].skipped?' skipped':' done'):i===index?' current':''}`);d.setAttribute('aria-label',`${i+1}: ${i<index?(records[i].skipped?'пропущен':'решён'):i===index?'сейчас':'впереди'}`);$('dots').append(d);}
 }
-function next(){index++;if(index===problems.length)finish();else{show();if(matchMedia('(min-width: 761px)').matches)$('answer').focus();}}
+function next(){$('answer').blur();index++;if(index===problems.length)finish();else show();}
 $('answerForm').addEventListener('submit',e=>{
  e.preventDefault();if(!active)return;if(checked){next();return;}
  const raw=$('answer').value.trim().replace('−','-');if(!/^-?\d+$/.test(raw)){feedback('Сначала введи число 😊',true);return;}
