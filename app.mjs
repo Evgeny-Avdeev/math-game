@@ -1,11 +1,12 @@
+import {createActivityLifecycle} from './activity-lifecycle.mjs?v=1';
 import {createActivityRegistry} from './activity-registry.mjs?v=1';
 import {createActivityTutorial} from './activity-tutorial.mjs?v=1';
 import {applyActivityDefinition} from './activity-shell.mjs?v=1';
 import {activityDefinitions} from './activity-definitions.mjs?v=clear-givens-1';
 const analyticsModule=import('./analytics.mjs?v=1').catch(()=>null);
 function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).catch(()=>{});}
-import {mountFigudoku} from './figudoku-ui.mjs?v=clear-givens-1';
-import {mountTents} from './tents-ui.mjs?v=shared-puzzles-1';
+import {mountFigudoku} from './figudoku-ui.mjs?v=lifecycle-1';
+import {mountTents} from './tents-ui.mjs?v=lifecycle-1';
 import {makeProblems,hint} from './math.mjs?v=15';
 import {badgeDefs,currencyBalance,solvedPuzzlesAcrossWorlds,cleanProfile,settle,settlePuzzle,rewardStatus,rewardMessage,rewardModes} from './game.mjs?v=shared-wallet-1';
 import {worlds,getWorld,amount} from './worlds.mjs?v=dogs-names-1';
@@ -86,10 +87,44 @@ function renderCollection(){
 function openArtifact(a,owned,m){const box=$('artifactDetail');box.replaceChildren();box.append(itemImage(a,owned),el('span','eyebrow',m.title),el('h2','',owned?a.name:worldId==='space'?'Здесь будет сокровище':isFootball()?'Здесь будет новая карточка!':'Здесь будет новый друг!'),el('p','',owned?a.story:`Выполняй это приключение: за удачную игру ты можешь открыть ${world.collectibleAcc}. Или реши «Деревья и палатки» или «Фигудоку» для этого набора. Чтобы собрать набор, получи карточки всеми тремя способами. Одним способом — не больше 60% набора. Подсказками пользоваться можно!`));$('artifactDialog').showModal();}
 $('closeArtifact').onclick=()=>$('artifactDialog').close();
 function startMission(id){const m=missions.find(m=>m.id===id);missionId=id;origin='home';start(makeProblems(m.count,'mixed',m.level),m.title,`Собираем набор «${m.title}». Реши ${Math.ceil(m.count*.8)} из ${m.count} примеров · + и − и получи ${world.collectibleAcc}. Подсказки разрешены! ${rewardMessage(rewardStatus(profile,id,'math',worldId))}`);}
-function start(list,title,goal){
- track('game_start',{world:worldId,game:'math'});
- problems=list;records=[];index=streak=bestStreak=earned=0;active=true;$('playTitle').textContent=title;$('mathSetProgress').textContent=missionId?'Решай примеры и пополняй коллекцию':'Тренировка в своём темпе';$('goalText').textContent=goal;setCurrency($('sessionStars'),0);view('play');show();
-}
+let mathStart,mathSessionId;
+const mathLifecycle=createActivityLifecycle({
+ key:()=>`schitay-math-${worldId}-${missionId||origin}-v1`,
+ id:()=>mathSessionId,render:()=>{active=true;},
+ solved:()=>active&&index===problems.length,
+ lock:()=>{active=false;},
+ snapshot:completed=>({completed,id:mathSessionId,problems,records,index,streak,bestStreak,attempts,hinted,checked,earned,missionId,origin,
+  title:$('playTitle').textContent,goal:$('goalText').textContent,answer:$('answer').value,feedback:$('feedback').textContent}),
+ load(saved){
+  const valid=saved&&!saved.completed&&Array.isArray(saved.problems)&&saved.problems.length>0&&saved.problems.length<=100
+   &&saved.problems.every(p=>Number.isInteger(p.a)&&Number.isInteger(p.b)&&['+','−'].includes(p.op)&&p.answer===(p.op==='+'?p.a+p.b:p.a-p.b))
+   &&Number.isInteger(saved.index)&&saved.index>=0&&saved.index<saved.problems.length
+   &&Array.isArray(saved.records)&&saved.records.length===saved.index+(saved.checked?1:0)
+   &&saved.records.every((r,i)=>r&&r.p&&r.p.a===saved.problems[i].a&&r.p.b===saved.problems[i].b&&r.p.op===saved.problems[i].op&&typeof r.first==='boolean'&&typeof r.skipped==='boolean')
+   &&['streak','bestStreak','attempts','earned'].every(k=>Number.isSafeInteger(saved[k])&&saved[k]>=0)
+   &&saved.missionId===missionId&&saved.origin===origin&&typeof saved.id==='string';
+  const draft=valid?saved:null;
+  problems=draft?draft.problems:mathStart.list;records=draft?draft.records:[];
+  index=draft?draft.index:0;streak=draft?draft.streak:0;bestStreak=draft?draft.bestStreak:0;earned=draft?draft.earned:0;
+  mathSessionId=draft?draft.id:crypto.randomUUID();active=true;
+  $('playTitle').textContent=draft?draft.title:mathStart.title;
+  $('mathSetProgress').textContent=missionId?'Решай примеры и пополняй коллекцию':'Тренировка в своём темпе';
+  $('goalText').textContent=draft?draft.goal:mathStart.goal;setCurrency($('sessionStars'),earned);show();
+  if(draft){attempts=draft.attempts;hinted=!!draft.hinted;checked=!!draft.checked;$('answer').value=String(draft.answer||'');
+   $('answer').readOnly=checked;$('answer').className='answer'+(checked?' correct':'');
+   feedback(draft.feedback||'');$('skip').hidden=checked;$('hint').disabled=checked;
+   $('hintBox').hidden=!hinted;if(hinted)$('hintBox').textContent=hint(problems[index]);
+   if(checked)$('submit').textContent=index===problems.length-1?'Забрать награды! 🎉':'Ещё пример →';
+  }
+  track('game_start',{world:worldId,game:'math'});
+ },
+ complete:finishResult,
+ onStorageError:()=>{storageOK=false;},
+});
+function start(list,title,goal){mathStart={list,title,goal};mathLifecycle.enter();view('play');}
+function persistMath(){if(active)mathLifecycle.persist();}
+window.addEventListener('pagehide',persistMath);
+
 function show(){
  const p=problems[index];attempts=0;hinted=false;checked=false;
  $('position').textContent=`Пример ${index+1} из ${problems.length}`;$('progress').style.width=`${index/problems.length*100}%`;
@@ -100,7 +135,7 @@ function show(){
  $('streak').textContent=`🔥 ${streak} подряд`;$('dots').replaceChildren();
  for(let i=0;i<problems.length;i++){const d=el('span',`dot${i<index?(records[i].skipped?' skipped':' done'):i===index?' current':''}`);d.setAttribute('aria-label',`${i+1}: ${i<index?(records[i].skipped?'пропущен':'решён'):i===index?'сейчас':'впереди'}`);$('dots').append(d);}
 }
-function next(){index++;if(index===problems.length)finish();else{show();if(matchMedia('(min-width: 761px)').matches)$('answer').focus();}}
+function next(){index++;if(index===problems.length)finish();else{show();persistMath();scrollToView('play');}}
 $('answerForm').addEventListener('submit',e=>{
  e.preventDefault();if(!active)return;if(checked){next();return;}
  const raw=$('answer').value.trim().replace('−','-');if(!/^-?\d+$/.test(raw)){feedback('Сначала введи число 😊',true);return;}
@@ -112,6 +147,7 @@ $('answerForm').addEventListener('submit',e=>{
   $('submit').textContent=index===problems.length-1?'Забрать награды! 🎉':'Ещё пример →';$('skip').hidden=true;$('hint').disabled=true;$('streak').textContent=`🔥 ${streak} подряд`;setCurrency($('sessionStars'),earned);
   setSpeech($('buddyText'),streak>=5?`Пять подряд и больше! ${highFive()}`:'Я знал, что у тебя получится!');
  }else{attempts++;streak=0;$('streak').textContent='🔥 0 подряд';$('answer').className='answer wrong';$('answer').setAttribute('aria-invalid','true');feedback(`Почти! Попробуй ещё или позови на помощь 💡`,true);$('buddyText').textContent='Ошибки помогают учиться. Давай попробуем вместе!';$('answer').focus();$('answer').select();}
+ persistMath();
 });
 function setSpeech(target,text){
  target.textContent=text;
@@ -123,12 +159,12 @@ function setSpeech(target,text){
 }
 function highFive(){return isDog()||worldId==='cat'?'Дай лапу!':'Дай пять! 🖐';}
 function feedback(text,bad=false){$('feedback').textContent=text;$('feedback').className='feedback'+(bad?' bad':'');}
-$('hint').onclick=()=>{hinted=true;streak=0;$('streak').textContent='🔥 0 подряд';$('hintBox').textContent=hint(problems[index]);$('hintBox').hidden=false;$('buddyText').textContent='Посчитаем по частям — так проще!';};
+$('hint').onclick=()=>{hinted=true;streak=0;$('streak').textContent='🔥 0 подряд';$('hintBox').textContent=hint(problems[index]);$('hintBox').hidden=false;$('buddyText').textContent='Посчитаем по частям — так проще!';persistMath();};
 $('skip').onclick=()=>{records.push({p:problems[index],first:false,attempts,hinted,skipped:true});streak=0;next();};
-$('answer').oninput=()=>{if(!checked){$('answer').className='answer';$('answer').removeAttribute('aria-invalid');$('feedback').textContent='';}};
+$('answer').oninput=()=>{if(!checked){$('answer').className='answer';$('answer').removeAttribute('aria-invalid');$('feedback').textContent='';persistMath();}};
 $('keypad').onclick=e=>{const b=e.target.closest('[data-key]');if(!b||checked)return;const a=$('answer'),k=b.dataset.key;if(k==='del')a.value=a.value.slice(0,-1);else if(k==='minus')a.value=a.value.startsWith('-')?a.value.slice(1):'-'+a.value;else if(a.value.length<4)a.value+=k;a.dispatchEvent(new Event('input'));};
-function finish(){
- if(!active)return;active=false;
+function finish(){mathLifecycle.complete();}
+function finishResult(){
  track('game_complete',{world:worldId,game:'math',solved:records.filter(r=>!r.skipped).length});
  const result=settle(profile,records,missionId,bestStreak,worldId);profile=result.profile;save();
  lastMistakes=records.filter(r=>!r.first).map(r=>r.p);
@@ -147,8 +183,8 @@ $('retry').onclick=()=>{missionId=null;origin='home';start(lastMistakes.map(p=>(
 $('startFree').onclick=()=>{missionId=null;origin='free';start(makeProblems(Number($('count').value),'mixed',$('level').value,$('negative').checked),'Просто играем!',`Считай в своём темпе и собирай ${world.currency}.`);};
 $('goMission').onclick=()=>$('activityHub').scrollIntoView({behavior:'smooth',block:'start'});
 $('nextMission').onclick=()=>view('home');
-function requestView(id){pendingWorld=null;if(active){pendingView=id;$('leaveDialog').showModal();}else view(id);}
-let pendingView='home';$('leave').onclick=()=>requestView(origin);$('stay').onclick=()=>{pendingWorld=null;$('leaveDialog').close();};$('confirmLeave').onclick=()=>{active=false;$('leaveDialog').close();if(pendingWorld){const id=pendingWorld;pendingWorld=null;switchWorld(id);}else view(pendingView);};
+function requestView(id){pendingWorld=null;if(active){persistMath();pendingView=id;$('leaveDialog').showModal();}else view(id);}
+let pendingView='home';$('leave').onclick=()=>requestView(origin);$('stay').onclick=()=>{pendingWorld=null;$('leaveDialog').close();};$('confirmLeave').onclick=()=>{persistMath();active=false;$('leaveDialog').close();if(pendingWorld){const id=pendingWorld;pendingWorld=null;switchWorld(id);}else view(pendingView);};
 for(const b of document.querySelectorAll('[data-view]'))b.onclick=()=>requestView(b.dataset.view);
 for(const a of document.querySelectorAll('a[href="#home"]'))a.onclick=e=>{e.preventDefault();requestView('home');};
 $('print').onclick=()=>{
@@ -186,7 +222,7 @@ function applyWorld(){
  for(const b of document.querySelectorAll('[data-world-choice]')){const selected=b.dataset.worldChoice===worldId||(b.dataset.worldChoice==='football'&&isFootball())||(b.dataset.worldChoice==='dog'&&isDog());b.setAttribute('aria-pressed',String(selected));b.classList.toggle('selected',selected);}
  document.title=`Считай легко · ${world.name}`;
 }
-function switchWorld(id){if(!worlds[id])return;if(active){pendingWorld=id;pendingView='home';$('leaveDialog').showModal();return;}worldId=id;footballMenuOpen=false;dogMenuOpen=false;bindWorld();track('world_select',{world:worldId});try{localStorage.setItem('schitay-world-v1',id);}catch{storageOK=false;}applyWorld();updateProfile();view('home',{scroll:false});}
+function switchWorld(id){if(!worlds[id])return;if(active){persistMath();pendingWorld=id;pendingView='home';$('leaveDialog').showModal();return;}worldId=id;footballMenuOpen=false;dogMenuOpen=false;bindWorld();track('world_select',{world:worldId});try{localStorage.setItem('schitay-world-v1',id);}catch{storageOK=false;}applyWorld();updateProfile();view('home',{scroll:false});}
 let pendingWorld=null;
 function renderFootballMenu(){
  const parent=document.querySelector('[data-world-choice="football"]');
