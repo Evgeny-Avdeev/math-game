@@ -7,8 +7,8 @@ function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).ca
 import {mountFigudoku} from './figudoku-ui.mjs?v=clear-givens-1';
 import {mountTents} from './tents-ui.mjs?v=shared-puzzles-1';
 import {makeProblems,hint} from './math.mjs?v=15';
-import {badgeDefs,solvedPuzzlesAcrossWorlds,cleanProfile,settle,settlePuzzle,rewardStatus,rewardMessage,rewardModes} from './game.mjs?v=shared-puzzles-1';
-import {worlds,getWorld,amount} from './worlds.mjs?v=teams-repair2-20261107';
+import {badgeDefs,solvedPuzzlesAcrossWorlds,cleanProfile,settle,settlePuzzle,rewardStatus,rewardMessage,rewardModes} from './game.mjs?v=dogs2-1';
+import {worlds,getWorld,amount} from './worlds.mjs?v=dogs2-1';
 import {portrait} from './portraits.mjs?v=teams-repair2-20261107';
 const $=id=>document.getElementById(id);
 let worldId='space',world,missions,artifacts,profile,storageOK=true;
@@ -17,7 +17,8 @@ const activities=createActivityRegistry();
 activities.register('play',{showTutorialIfFirst:()=>mathTutorialVisit?.openIfFirst()});
 const selectedSets={};
 const profiles={};
-let footballMenuOpen=false;
+let footballMenuOpen=false,dogMenuOpen=false;
+const isDog=()=>worldId==='dog'||worldId==='dogMore';
 const isFootball=()=>worldId==='football'||worldId==='footballTeams';
 try{const selected=localStorage.getItem('schitay-world-v1');if(worlds[selected])worldId=selected;}catch{storageOK=false;}
 for(const id of Object.keys(worlds)){try{profiles[id]=cleanProfile(JSON.parse(localStorage.getItem(`schitay-${id}-v1`)||'null'),id);}catch{profiles[id]=cleanProfile(null,id);storageOK=false;}}
@@ -51,7 +52,7 @@ function updateProfile(){
  $('levelInfo').textContent=`Уровень ${level} · ${profile.stars%50} из 50 ${world.unit[2]} до следующего`;$('levelProgress').style.width=`${profile.stars%50*2}%`;
  $('totalSolved').textContent=profile.solved;$('totalMissions').textContent=profile.completed;
  $('storageNote').textContent=storageOK?'Коллекция сохраняется в этом браузере на этом устройстве.':'Браузер не разрешил сохранение. Коллекция доступна, пока открыта эта страница.';
- renderMissions();renderCollection();renderActivity();renderFootballMenu();
+ renderMissions();renderCollection();renderActivity();renderFootballMenu();renderDogMenu();
 }
 function difficulty(m){return {easy:'лёгкая',all:'средняя',carry:'сложная'}[m.level];}
 function renderMissions(){
@@ -113,13 +114,13 @@ $('answerForm').addEventListener('submit',e=>{
 });
 function setSpeech(target,text){
  target.textContent=text;
- if((worldId==='dog'||worldId==='cat')&&text.includes('Дай лапу!')){
+ if((isDog()||worldId==='cat')&&text.includes('Дай лапу!')){
   const paw=el('span','single-paw');paw.setAttribute('aria-hidden','true');
   paw.innerHTML='<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><g fill="currentColor"><ellipse cx="6" cy="12" rx="3.5" ry="5" transform="rotate(-25 6 12)"/><ellipse cx="12" cy="6.5" rx="3.5" ry="5" transform="rotate(-8 12 6.5)"/><ellipse cx="20" cy="6.5" rx="3.5" ry="5" transform="rotate(8 20 6.5)"/><ellipse cx="26" cy="12" rx="3.5" ry="5" transform="rotate(25 26 12)"/><path d="M7 24c0-4 5-10 9-10s9 6 9 10c0 5-5 6-9 4-4 2-9 1-9-4Z"/></g></svg>';
   target.append(paw);
  }
 }
-function highFive(){return worldId==='dog'||worldId==='cat'?'Дай лапу!':'Дай пять! 🖐';}
+function highFive(){return isDog()||worldId==='cat'?'Дай лапу!':'Дай пять! 🖐';}
 function feedback(text,bad=false){$('feedback').textContent=text;$('feedback').className='feedback'+(bad?' bad':'');}
 $('hint').onclick=()=>{hinted=true;streak=0;$('streak').textContent='🔥 0 подряд';$('hintBox').textContent=hint(problems[index]);$('hintBox').hidden=false;$('buddyText').textContent='Посчитаем по частям — так проще!';};
 $('skip').onclick=()=>{records.push({p:problems[index],first:false,attempts,hinted,skipped:true});streak=0;next();};
@@ -157,34 +158,34 @@ $('print').onclick=()=>{
 };
 applyWorld();updateProfile();view('home',{scroll:false});
 
-function themedBadges(){return badgeDefs.map(b=>b.id==='first'?{...b,name:worldId==='space'?'Первый полёт':'Первое приключение'}:b.id==='collector'?{...b,name:worldId==='space'?'Хранитель сокровищ':'Вся команда в сборе!',description:worldId==='space'?'Собери все 36 артефактов':`Собери все ${artifacts.length} ${isFootball()?(worldId==='footballTeams'?'карточек команд':'карточек футболистов'):worldId==='dog'?'пород собак':'пород кошек'}`} : b);}
+function themedBadges(){return badgeDefs.map(b=>b.id==='first'?{...b,name:worldId==='space'?'Первый полёт':'Первое приключение'}:b.id==='collector'?{...b,name:worldId==='space'?'Хранитель сокровищ':'Вся команда в сборе!',description:worldId==='space'?'Собери все 36 артефактов':`Собери все ${artifacts.length} ${isFootball()?(worldId==='footballTeams'?'карточек команд':'карточек футболистов'):isDog()?'пород собак':'пород кошек'}`} : b);}
 function itemImage(a,owned){const d=el('span','artifact-image'+(a.pet?' pet-image':''));if(owned&&a.pet)d.innerHTML=portrait(a);else d.textContent=owned?a.icon:'🔒';return d;}
 function token(){const t=el('span',worldId==='cat'?'sausage-token':'currency-token',worldId==='cat'?'':world.rewardIcon);t.setAttribute('aria-hidden','true');return t;}
 function setCurrency(target,n){target.replaceChildren(token(),el('span','',String(n)));}
 function applyWorld(){
- document.body.dataset.world=isFootball()?'football':worldId;
+ document.body.dataset.world=isFootball()?'football':isDog()?'dog':worldId;
  const avatar=$('levelAvatar');avatar.replaceChildren();
  const avatarNames={space:'Космонавт',dog:'Мальтипу Лорри',cat:'Котик',football:'Футболист'};
- avatar.setAttribute('aria-label',avatarNames[worldId==='footballTeams'?'football':worldId]);
+ avatar.setAttribute('aria-label',avatarNames[isDog()?'dog':isFootball()?'football':worldId]);
  if(worldId==='space')avatar.textContent='🧑‍🚀';
  else if(isFootball())avatar.innerHTML='<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M7 61V48Q9 36 24 36H40Q55 36 57 48V61Z" fill="#35966e"/><path d="M24 36L32 45L40 36" fill="#fff7df"/><circle cx="32" cy="22" r="16" fill="#edbd91"/><path d="M16 21Q12 3 30 3Q51 1 49 23L43 17L38 11Q28 20 16 21Z" fill="#5a4139"/><circle cx="26" cy="23" r="1.7" fill="#493b44"/><circle cx="38" cy="23" r="1.7" fill="#493b44"/><path d="M27 30Q32 34 37 30" stroke="#925b52" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="47" cy="51" r="11" fill="white" stroke="#31574b" stroke-width="1.5"/><path d="M47 45L52 49L50 55H44L42 49Z" fill="#31574b"/></svg>';
  else avatar.innerHTML=portrait(world.mascot||artifacts[0]);
  $('clubName').textContent=world.club;$('walletIcon').replaceChildren(token());$('walletUnit').textContent=world.unit[2];
- $('welcomeText').textContent=world.welcome;$('heroTitle').textContent=world.hero;$('heroIntro').textContent={space:'Решай примеры или головоломки с Бипом и собирай космические сокровища!',dog:'Решай примеры или головоломки с Лорри и собирай карточки пород собак!',cat:'Решай примеры или головоломки с Муркой и собирай карточки пород кошек!',football:'Решай примеры или головоломки и открывай карточки известных футболистов!',footballTeams:world.intro}[worldId];$('goMission').textContent='Выбрать занятие →';
+ $('welcomeText').textContent=world.welcome;$('heroTitle').textContent=world.hero;$('heroIntro').textContent={space:'Решай примеры или головоломки с Бипом и собирай космические сокровища!',dog:'Решай примеры или головоломки с Лорри и собирай карточки пород собак!',cat:'Решай примеры или головоломки с Муркой и собирай карточки пород кошек!',football:'Решай примеры или головоломки и открывай карточки известных футболистов!',footballTeams:world.intro,dogMore:world.intro}[worldId];$('goMission').textContent='Выбрать занятие →';
  $('missionHeading').textContent=world.section;$('missionNote').textContent=world.missionNote||(worldId==='space'?`${artifacts.length} сокровищ ждут тебя!`:`${artifacts.length} хвостатых друзей ждут тебя!`);$('bannerTitle').textContent=world.banner;$('bannerText').textContent=world.bannerText;$('collectionTitle').textContent=world.collectionTitle;$('collectionNote').textContent=world.collectionNote;
  $('freeIntro').textContent=`Плюс и минус вперемешку. За ответы получай ${world.currency}!`;$('freeCollectionNote').textContent=`${world.collectionKind||(worldId==='space'?'Артефакты':'Породы')} можно открыть в приключениях.`;
  $('buddyName').textContent=`Я ${world.buddy}!`;$('hint').textContent=`💡 ${world.buddy}, помоги!`;$('spaceArt').hidden=worldId!=='space';$('petHero').hidden=worldId==='space';
  $('buddyFace').replaceChildren();$('petHero').replaceChildren();
  if(worldId==='space')$('buddyFace').textContent='🤖';else{
   const buddy=world.mascot||artifacts[0];$('buddyFace').innerHTML=portrait(buddy);
-  const bubble=el('span','pet-bubble',world.heroBubble||(worldId==='dog'?'Я Лорри! Дай лапу!':'Мур! Дай лапу!'));setSpeech(bubble,bubble.textContent);const face=el('div','hero-pet-face');face.innerHTML=portrait(buddy);
+  const bubble=el('span','pet-bubble',world.heroBubble||(isDog()?'Я Лорри! Дай лапу!':'Мур! Дай лапу!'));setSpeech(bubble,bubble.textContent);const face=el('div','hero-pet-face');face.innerHTML=portrait(buddy);
   const fun=el('span','pet-fun-token');fun.append(token());$('petHero').append(bubble,face,fun,el('span','pet-paw',isFootball()?'🏆':'🐾'),el('span','pet-math','＋ −'));
  }
  $('leave').textContent='← Выбрать занятие';$('nextMission').textContent=`К ${world.place} →`;$('confirmLeave').textContent=`К ${world.place}`;$('celebration').replaceChildren(el('span','','🎉'),token(),el('span','','🎉'));
- for(const b of document.querySelectorAll('[data-world-choice]')){const selected=b.dataset.worldChoice===worldId||(b.dataset.worldChoice==='football'&&isFootball());b.setAttribute('aria-pressed',String(selected));b.classList.toggle('selected',selected);}
+ for(const b of document.querySelectorAll('[data-world-choice]')){const selected=b.dataset.worldChoice===worldId||(b.dataset.worldChoice==='football'&&isFootball())||(b.dataset.worldChoice==='dog'&&isDog());b.setAttribute('aria-pressed',String(selected));b.classList.toggle('selected',selected);}
  document.title=`Считай легко · ${world.name}`;
 }
-function switchWorld(id){if(!worlds[id])return;if(active){pendingWorld=id;pendingView='home';$('leaveDialog').showModal();return;}worldId=id;footballMenuOpen=false;bindWorld();track('world_select',{world:worldId});try{localStorage.setItem('schitay-world-v1',id);}catch{storageOK=false;}applyWorld();updateProfile();view('home',{scroll:false});}
+function switchWorld(id){if(!worlds[id])return;if(active){pendingWorld=id;pendingView='home';$('leaveDialog').showModal();return;}worldId=id;footballMenuOpen=false;dogMenuOpen=false;bindWorld();track('world_select',{world:worldId});try{localStorage.setItem('schitay-world-v1',id);}catch{storageOK=false;}applyWorld();updateProfile();view('home',{scroll:false});}
 let pendingWorld=null;
 function renderFootballMenu(){
  const parent=document.querySelector('[data-world-choice="football"]');
@@ -193,16 +194,25 @@ function renderFootballMenu(){
  $('footballTeamProgress').textContent=`${profiles.footballTeams.items.length} из 36 · клубы со всего мира`;
  for(const b of document.querySelectorAll('[data-football-choice]'))b.setAttribute('aria-pressed',String(b.dataset.footballChoice===worldId));
 }
+function renderDogMenu(){
+ const parent=document.querySelector('[data-world-choice="dog"]');
+ $('dogMenu').hidden=!dogMenuOpen;parent.setAttribute('aria-expanded',String(dogMenuOpen));
+ $('dogFirstProgress').textContent=`${profiles.dog.items.length} из ${worlds.dog.artifacts.length} · твои достижения`;
+ $('dogSecondProgress').textContent=`${profiles.dogMore.items.length} из ${worlds.dogMore.artifacts.length} · новые породы`;
+ for(const b of document.querySelectorAll('[data-dog-choice]'))b.setAttribute('aria-pressed',String(b.dataset.dogChoice===worldId));
+}
 for(const b of document.querySelectorAll('[data-world-choice]'))b.onclick=()=>{
- if(b.dataset.worldChoice==='football'){footballMenuOpen=!footballMenuOpen;renderFootballMenu();}
+ if(b.dataset.worldChoice==='football'){footballMenuOpen=!footballMenuOpen;dogMenuOpen=false;renderFootballMenu();renderDogMenu();}
+ else if(b.dataset.worldChoice==='dog'){dogMenuOpen=!dogMenuOpen;footballMenuOpen=false;renderDogMenu();renderFootballMenu();}
  else switchWorld(b.dataset.worldChoice);
 };
 for(const b of document.querySelectorAll('[data-football-choice]'))b.onclick=()=>switchWorld(b.dataset.footballChoice);
-function closeFootballMenu(){if(footballMenuOpen){footballMenuOpen=false;renderFootballMenu();}}
+for(const b of document.querySelectorAll('[data-dog-choice]'))b.onclick=()=>switchWorld(b.dataset.dogChoice);
+function closeCollectionMenus(){footballMenuOpen=false;dogMenuOpen=false;renderFootballMenu();renderDogMenu();}
 document.addEventListener('click',e=>{
- if(footballMenuOpen&&!e.target.closest('[data-world-choice="football"]'))closeFootballMenu();
+ if((footballMenuOpen&&!e.target.closest('[data-world-choice="football"]'))||(dogMenuOpen&&!e.target.closest('[data-world-choice="dog"]')))closeCollectionMenus();
 });
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeFootballMenu();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCollectionMenus();});
 
 function puzzleContext(){return {id:worldId,world,missions,profile,solvedPuzzles:solvedPuzzlesAcrossWorlds(profiles),targetMission:goalMission()};}
 

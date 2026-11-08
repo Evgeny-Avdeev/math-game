@@ -158,3 +158,12 @@ nav{flex-wrap:wrap;gap:5px}.nav{font-size:14px}.forest-invite{display:flex;align
 .forest-actions>[data-activity-action="check"],.forest-actions>[data-activity-action="reset"]{grid-column:1/-1}
 .forest-actions>[data-activity-action="reset"]{border:2px solid var(--outline);border-radius:14px;background:var(--bg);margin:0}
 .activity-board-slot{min-width:0;max-width:100%;margin:20px auto}
+
+/* Dog collections share the football chooser layout, with dog-world colors. */
+.dog-menu{background:#fff8e6;border-color:#f4db96}
+.dog-menu .football-menu-heading,.dog-menu .football-options button{color:#65412f}
+.dog-menu .football-menu-heading>span,.dog-menu .football-options small{color:#957e66}
+.dog-menu .football-options button{border-color:#f2dfb4}
+.dog-menu .football-options button[aria-pressed=true]{border-color:#d77432;background:#ffedbf;box-shadow:0 0 0 1px #d77432}
+.dog-menu .football-options button:hover{background:#fff0c7}
+.dog-menu .football-options button:focus-visible{outline-color:#d77432}

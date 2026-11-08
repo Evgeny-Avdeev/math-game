@@ -1,4 +1,4 @@
-import {getWorld} from './worlds.mjs?v=teams-repair2-20261107';
+import {getWorld} from './worlds.mjs?v=dogs2-1';
 export {missions,artifacts} from './space.mjs?v=8';
 export const badgeDefs=[
  {id:'first',icon:'🏅',name:'Первый полёт',description:'Заверши первую миссию',test:p=>p.completed>=1},
