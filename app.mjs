@@ -191,14 +191,14 @@ let pendingWorld=null;
 function renderFootballMenu(){
  const parent=document.querySelector('[data-world-choice="football"]');
  $('footballMenu').hidden=!footballMenuOpen;parent.setAttribute('aria-expanded',String(footballMenuOpen));
- $('footballPlayerProgress').textContent=`${profiles.football.items.length} из 36 · твои достижения`;
+ $('footballPlayerProgress').textContent=`${profiles.football.items.length} из 36 · известные футболисты`;
  $('footballTeamProgress').textContent=`${profiles.footballTeams.items.length} из 36 · клубы со всего мира`;
  for(const b of document.querySelectorAll('[data-football-choice]'))b.setAttribute('aria-pressed',String(b.dataset.footballChoice===worldId));
 }
 function renderDogMenu(){
  const parent=document.querySelector('[data-world-choice="dog"]');
  $('dogMenu').hidden=!dogMenuOpen;parent.setAttribute('aria-expanded',String(dogMenuOpen));
- $('dogFirstProgress').textContent=`${profiles.dog.items.length} из ${worlds.dog.artifacts.length} · твои достижения`;
+ $('dogFirstProgress').textContent=`${profiles.dog.items.length} из ${worlds.dog.artifacts.length} · породы собак`;
  $('dogSecondProgress').textContent=`${profiles.dogMore.items.length} из ${worlds.dogMore.artifacts.length} · новые породы`;
  for(const b of document.querySelectorAll('[data-dog-choice]'))b.setAttribute('aria-pressed',String(b.dataset.dogChoice===worldId));
 }
