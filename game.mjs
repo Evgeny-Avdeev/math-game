@@ -1,4 +1,7 @@
 import {getWorld} from './worlds.mjs?v=dogs-names-1';
+import {figudokuPuzzles} from './figudoku-data.mjs?v=expanded-bank-1';
+import {puzzles as tentsPuzzles} from './tents-data.mjs?v=1';
+const puzzleIds=new Set([...figudokuPuzzles,...tentsPuzzles].map(p=>p.id));
 export {missions,artifacts} from './space.mjs?v=8';
 export const badgeDefs=[
  {id:'first',icon:'🏅',name:'Первый полёт',description:'Заверши первую миссию',test:p=>p.completed>=1},
@@ -30,7 +33,7 @@ export function cleanProfile(raw,worldId='space'){
  const p=emptyProfile();
  if(!raw||typeof raw!=='object')return p;
  for(const k of ['stars','solved','completed','bestStreak'])if(Number.isSafeInteger(raw[k])&&raw[k]>=0)p[k]=raw[k];
- p.puzzles=[...new Set(Array.isArray(raw.puzzles)?raw.puzzles:[])].filter(id=>typeof id==='string'&&/^(?:forest-(?:5|6|8)|figudoku-(?:easy|medium|hard))-([1-9]|1[0-9]|2[0-4])$/.test(id));
+ p.puzzles=[...new Set(Array.isArray(raw.puzzles)?raw.puzzles:[])].filter(id=>puzzleIds.has(id));
  p.items=[...new Set(Array.isArray(raw.items)?raw.items:[])].filter(id=>artifacts.some(a=>a.id===id));
  for(const id of p.items)if(['math','tents','figudoku'].includes(raw.itemSources?.[id]))p.itemSources[id]=raw.itemSources[id];
  p.badges=[...new Set(Array.isArray(raw.badges)?raw.badges:[])].filter(id=>badgeDefs.some(a=>a.id===id));
@@ -79,7 +82,7 @@ export function settle(profile,records,missionId,bestStreak,worldId='space'){
 
 export function settlePuzzle(profile,puzzleId,missionId,worldId='space'){
  const p=cleanProfile(profile,worldId),{missions,artifacts}=getWorld(worldId);
- if(!/^(?:forest-(?:5|6|8)|figudoku-(?:easy|medium|hard))-([1-9]|1[0-9]|2[0-4])$/.test(puzzleId)||!missions.some(m=>m.id===missionId))throw new Error('Unknown puzzle or collection');
+ if(!puzzleIds.has(puzzleId)||!missions.some(m=>m.id===missionId))throw new Error('Unknown puzzle or collection');
  if(p.puzzles.includes(puzzleId))return {profile:p,already:true,reward:null};
  p.puzzles.push(puzzleId);p.stars+=10;p.completed++;
  const {reward,rewardStatus}=awardCard(p,missionId,puzzleId.startsWith('figudoku-')?'figudoku':'tents',worldId);

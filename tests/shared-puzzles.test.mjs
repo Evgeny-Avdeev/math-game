@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {cleanProfile,settlePuzzle,solvedPuzzlesAcrossWorlds} from '../game.mjs';
+import {cleanProfile,settlePuzzle,rewardStatus,solvedPuzzlesAcrossWorlds} from '../game.mjs';
 import {worlds,getWorld} from '../worlds.mjs';
 import {figudokuPuzzles} from '../figudoku-data.mjs';
-import {nextFigudoku} from '../figudoku-engine.mjs';
+import {figudokuLevel,nextFigudoku} from '../figudoku-engine.mjs';
 import {puzzles} from '../tents-data.mjs';
 import {nextPuzzle} from '../tents-sequence.mjs';
 
@@ -45,4 +45,61 @@ test('a solve in another world immediately removes an old draft from the unsolve
  assert.ok(solvedPuzzlesAcrossWorlds(profiles).includes(draft.id));
  assert.notEqual(games[0].next(solvedPuzzlesAcrossWorlds(profiles)).id,draft.id);
  assert.deepEqual(profiles.space.puzzles,[]);
+});
+
+// Keep the originally requested five-world scenario and cover later collections too.
+const originalWorlds=['space','dog','cat','football','footballTeams'];
+const reload=profiles=>Object.fromEntries(Object.entries(JSON.parse(JSON.stringify(profiles))).map(([id,p])=>[id,cleanProfile(p,id)]));
+for(const ids of [originalWorlds,Object.keys(worlds)])for(const order of ['world-first','alternating-sets']){
+ test(`all available Figudoku cards in ${ids.length} worlds: ${order}, including reloads`,()=>{
+  let profiles=fresh();const seen=new Set(),counts={easy:0,medium:0,hard:0};
+  const tasks=order==='world-first'
+   ?ids.flatMap(world=>getWorld(world).missions.flatMap((_,set)=>Array.from({length:5},()=>({world,set}))))
+   :Array.from({length:5},()=>[0,1,2,3].flatMap(set=>ids.map(world=>({world,set})))).flat();
+  for(const {world,set} of tasks){
+   const w=getWorld(world),mission=w.missions[set],level=figudokuLevel(w.missions,mission.id);
+   const p=nextFigudoku(figudokuPuzzles,level,solvedPuzzlesAcrossWorlds(profiles));
+   assert.equal(p.level,level);assert.equal(seen.has(p.id),false,`${world}/${set}: ${p.id}`);
+   const result=settlePuzzle(profiles[world],p.id,mission.id,world);
+   assert.equal(result.already,false);assert.ok(result.reward,`${world}/${set}: missing card`);
+   assert.equal(result.reward.mission,mission.id);seen.add(p.id);counts[level]++;
+   profiles[world]=result.profile;profiles=reload(profiles);
+   assert.ok(solvedPuzzlesAcrossWorlds(profiles).includes(p.id),`lost after reload: ${p.id}`);
+   const repeat=settlePuzzle(profiles[world],p.id,mission.id,world);
+   assert.equal(repeat.already,true);assert.equal(repeat.reward,null);assert.deepEqual(repeat.profile,profiles[world]);
+  }
+  assert.deepEqual(counts,{easy:ids.length*5,medium:ids.length*10,hard:ids.length*5});
+  for(const world of ids){
+   const profile=profiles[world];assert.equal(profile.items.length,20);assert.equal(profile.stars,200);
+   for(const mission of getWorld(world).missions){
+    const status=rewardStatus(profile,mission.id,'figudoku',world);
+    assert.equal(status.counts.figudoku,5);assert.equal(status.reason,'limit');assert.equal(status.allowed,false);
+   }
+  }
+  // With all current worlds the entire bank is exhausted, then only practice remains.
+  if(ids.length===Object.keys(worlds).length){
+   assert.equal(seen.size,figudokuPuzzles.length);
+   for(const level of ['easy','medium','hard'])assert.ok(seen.has(nextFigudoku(figudokuPuzzles,level,solvedPuzzlesAcrossWorlds(profiles)).id));
+  }
+ });
+}
+
+test('bank capacity covers all current collections and their actual Figudoku reward limits',()=>{
+ const needed={easy:0,medium:0,hard:0};
+ for(const world of Object.keys(worlds)){
+  const {missions}=getWorld(world);
+  for(const m of missions)needed[figudokuLevel(missions,m.id)]+=rewardStatus(cleanProfile(null,world),m.id,'figudoku',world).limit;
+ }
+ for(const [level,minimum] of Object.entries(needed))assert.ok(figudokuPuzzles.filter(p=>p.level===level).length>=minimum,`${level} needs ${minimum}`);
+});
+
+test('expanded IDs survive reload while nonexistent puzzle IDs remain rejected',()=>{
+ const valid=[...figudokuPuzzles,...puzzles].map(p=>p.id);
+ const invalid=['figudoku-easy-31','figudoku-medium-61','figudoku-hard-31','forest-5-25','forest-6-50','figudoku-medium-01','figudoku-medium-0','figudoku-medium-1junk',null,42,{}];
+ const p=cleanProfile({puzzles:[...valid,...valid,...invalid]},'space');
+ assert.deepEqual(p.puzzles,valid);
+ assert.deepEqual(reload({space:p}).space,p);
+ const mission=getWorld('space').missions[0].id;
+ for(const id of invalid)assert.throws(()=>settlePuzzle(p,id,mission,'space'),/Unknown puzzle/);
+ assert.throws(()=>settlePuzzle(p,valid[0],'missing','space'),/Unknown puzzle or collection/);
 });

@@ -5,10 +5,10 @@ import {applyActivityDefinition} from './activity-shell.mjs?v=1';
 import {activityDefinitions} from './activity-definitions.mjs?v=clear-givens-1';
 const analyticsModule=import('./analytics.mjs?v=1').catch(()=>null);
 function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).catch(()=>{});}
-import {mountFigudoku} from './figudoku-ui.mjs?v=lifecycle-1';
-import {mountTents} from './tents-ui.mjs?v=lifecycle-1';
+import {mountFigudoku} from './figudoku-ui.mjs?v=expanded-bank-1';
+import {mountTents} from './tents-ui.mjs?v=expanded-bank-1';
 import {makeProblems,hint} from './math.mjs?v=15';
-import {badgeDefs,currencyBalance,solvedPuzzlesAcrossWorlds,cleanProfile,settle,settlePuzzle,rewardStatus,rewardMessage,rewardModes} from './game.mjs?v=shared-wallet-1';
+import {badgeDefs,currencyBalance,solvedPuzzlesAcrossWorlds,cleanProfile,settle,settlePuzzle,rewardStatus,rewardMessage,rewardModes} from './game.mjs?v=expanded-bank-1';
 import {worlds,getWorld,amount} from './worlds.mjs?v=dogs-names-1';
 import {portrait} from './portraits.mjs?v=teams-repair2-20261107';
 const $=id=>document.getElementById(id);
