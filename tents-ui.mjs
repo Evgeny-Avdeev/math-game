@@ -23,7 +23,7 @@ export function mountTents(root,{context,reward,openCollection,openActivities}){
  for(let r=0;r<p.n;r++){board.append(number(p.rows[r],state.rows[r],`Строка ${r+1}`));for(let c=0;c<p.n;c++){const i=r*p.n+c,tree=p.trees.includes(i),b=document.createElement('button');b.className='forest-cell'+(tree?' tree':marks[i]===1?' tent':marks[i]===2?' grass':'')+(hintCell===i?' hinted':'');b.textContent=tree?'🌳':marks[i]===1?'⛺':marks[i]===2?'·':'';b.disabled=tree||locked;b.setAttribute('aria-label',`Строка ${r+1}, столбец ${c+1}: ${tree?'дерево':marks[i]===1?'палатка':marks[i]===2?'трава':'пусто'}`);b.onclick=()=>{history.push([...marks]);marks[i]=(marks[i]+1)%3;hintCell=-1;message('');draw();persist();complete();};board.append(b);}}
  const remaining=p.trees.length-state.tents.length;
  $('forestRemainingLabel').textContent=state.solved?'Лагерь готов!':remaining<0?'Лишних палаток':'Осталось поставить';$('forestRemaining').textContent=state.solved?'✓':Math.abs(remaining);if(!state.solved){const total=document.createElement('span');total.className='forest-total';total.textContent=' / '+p.trees.length;$('forestRemaining').append(total);}root.querySelector('.forest-remaining').classList.toggle('over',remaining<0);
- $('forestDone').textContent=`Решено: ${(context().profile.puzzles||[]).filter(id=>id.startsWith('forest-')).length} / ${puzzles.length}`;$('forestUndo').disabled=!history.length||locked;$('forestHint').disabled=locked;$('forestCheck').disabled=locked;
+ $('forestDone').textContent=`Решено: ${(context().solvedPuzzles??context().profile.puzzles??[]).filter(id=>id.startsWith('forest-')).length} / ${puzzles.length}`;$('forestUndo').disabled=!history.length||locked;$('forestHint').disabled=locked;$('forestCheck').disabled=locked;
  }
  $('forestBack').onclick=openActivities;
  $('forestUndo').onclick=()=>{if(history.length){marks=history.pop();hintCell=-1;message('');draw();persist();complete();}};
@@ -34,7 +34,7 @@ export function mountTents(root,{context,reward,openCollection,openActivities}){
  function complete(){
  if(locked||!inspect(p,marks).solved)return false;
  locked=true;track('game_complete',{world:context().id,game:'tents',solved:1});const result=reward(p.id,context().targetMission.id);draw();$('forestWin').hidden=false;$('forestPrize').replaceChildren();message(result.already?'Этот лагерь уже был решён. Продолжим со следующей головоломкой!':'Ура! Лагерь готов, все правила соблюдены!');const title=document.createElement('h2');title.textContent=result.already?'Отличная тренировка!':result.reward?'Новая награда в коллекции!':'Лагерь готов! +10';$('forestPrize').append(title);if(result.reward){const pic=document.createElement('div');pic.className='forest-prize-image';pic.append(result.image);const name=document.createElement('h3');name.textContent=result.reward.name;const story=document.createElement('p');story.textContent=result.reward.story;$('forestPrize').append(pic,name,story);}else{const note=document.createElement('p');note.textContent=result.already?'За это поле награда уже получена.':`${rewardMessage(result.rewardStatus)} За новый лагерь получено 10 единиц награды!`;$('forestPrize').append(note);}persist();return true;}
- $('forestNext').onclick=()=>{const ctx=context();load(nextPuzzle(puzzles,puzzleSize(ctx.missions,ctx.targetMission.id),ctx.profile.puzzles,p.id).id);};$('forestCollection').onclick=openCollection;
+ $('forestNext').onclick=()=>{const ctx=context();load(nextPuzzle(puzzles,puzzleSize(ctx.missions,ctx.targetMission.id),(ctx.solvedPuzzles??ctx.profile.puzzles),p.id).id);};$('forestCollection').onclick=openCollection;
  function updateGoal(){guide.update();const ctx=context();
  if(p){$('forestSize').textContent=`${p.n} × ${p.n}`;const list=puzzles.filter(a=>a.n===p.n);$('forestPuzzle').textContent=`№ ${list.findIndex(a=>a.id===p.id)+1} из ${list.length}`;}
  $('forestSetTitle').textContent=ctx.targetMission.title;
@@ -43,7 +43,7 @@ export function mountTents(root,{context,reward,openCollection,openActivities}){
 
  }
  function enter(){const ctx=context(),size=puzzleSize(ctx.missions,ctx.targetMission.id),key=`schitay-tents-${ctx.id}-${ctx.targetMission.id}-v2`;
- const next=nextPuzzle(puzzles,size,ctx.profile.puzzles);
+ const next=nextPuzzle(puzzles,size,(ctx.solvedPuzzles??ctx.profile.puzzles));
  if(draftKey===key&&p?.id===next.id&&!locked){updateGoal();return;}
  draftKey=key;let saved;
  try{saved=JSON.parse(localStorage.getItem(key)||'null');if(!saved){const old=JSON.parse(localStorage.getItem(`schitay-tents-${ctx.id}-v1`)||'null');if(old?.mission===ctx.targetMission.id)saved=old;}}catch{}
@@ -52,5 +52,6 @@ export function mountTents(root,{context,reward,openCollection,openActivities}){
  const tutorial=addTutorial(root);
  return {enter,showTutorialIfFirst:tutorial.openIfFirst};
 }
+
 
 
