@@ -59,38 +59,39 @@ test('actual math adapter restores checked answer, leaves/resumes, finishes once
  assert.equal(JSON.parse(data.get(key)).earned,1);
 });
 
-test('multiplication resumes its draft and awards one card in game mode and retains table selection in practice',async t=>{
+test('multiplication uses the shared exercise and result screens, with separate drafts and rewards',async t=>{
  const {data,$}=env(t);
  await import('../app.mjs?adapter-test=multiplication');
  const profileKey='schitay-space-v1';
  $('chooseMultiplication').click();
- const root=$('multiplication'), field=name=>root.querySelector(`#multiplication-${name}`);
  const mission=getWorld('space').missions[0].id;
  const key=`schitay-multiplication-space-${mission}-v1`, draft=()=>JSON.parse(data.get(key));
- const submit=()=>field('form').listeners.submit({preventDefault(){}});
- const enter=value=>{field('answer').value=String(value);field('answer').oninput();};
+ const submit=()=>$('answerForm').listeners.submit({preventDefault(){}});
+ const enter=value=>{$('answer').value=String(value);$('answer').oninput();};
+ const solve=()=>{enter(Number($('numA').textContent)*Number($('numB').textContent));submit();submit();};
+ const leave=()=>{$('leave').click();$('confirmLeave').click();};
  const table=draft().table;
  assert.ok(['2','3','4','5'].includes(table));
- assert.equal(field('table-picker').hidden,true);
+ assert.equal($('operator').textContent,'×');
+ assert.equal($('position').textContent,'Пример 1 из 10');
+ assert.equal($('dots').children.length,10);
+ assert.equal($('multiplicationTablePicker').hidden,true);
  assert.equal(data.get('schitay-tutorial-multiplication-seen-v1'),'1');
- assert.deepEqual(draft().problems.map(([a,b])=>{assert.equal(a,Number(table));return b;}).sort((a,b)=>a-b),
+ assert.deepEqual(draft().problems.map(({a,b})=>{assert.equal(a,Number(table));return b;}).sort((a,b)=>a-b),
   [1,2,3,4,5,6,7,8,9,10]);
- field('hint').click();
- assert.match(field('feedback').textContent,/Сложи|Возьми/);
+ $('hint').click();
+ assert.match($('hintBox').textContent,/Сложи|Возьми/);
  enter(0);submit();
- assert.equal(field('answer')['aria-invalid'],'true');
+ assert.equal($('answer')['aria-invalid'],'true');
  assert.equal(draft().index,0);
  const beforeReload=draft();
  await import('../app.mjs?adapter-test=multiplication-reload');
  $('chooseMultiplication').click();
  assert.deepEqual(draft(),beforeReload);
- for(let i=0;i<10;i++){
-  enter(Number(field('a').textContent)*Number(field('b').textContent));
-  submit();
-  if(i<9)submit();
- }
- assert.equal(field('result').hidden,false);
- assert.equal(field('progress').textContent,'10 из 10');
+ for(let i=0;i<10;i++)solve();
+ assert.equal($('resultTitle').textContent,'Миссия выполнена!');
+ assert.equal($('rewardBox').hidden,false);
+ assert.equal($('review').children.length,10);
  const awarded=data.get(profileKey);
  const savedProfile=JSON.parse(awarded);
  assert.equal(savedProfile.items.length,1);
@@ -100,20 +101,35 @@ test('multiplication resumes its draft and awards one card in game mode and reta
  assert.equal(data.get(profileKey),awarded);
  assert.notEqual(draft().table,table);
  assert.equal(draft().index,0);
- assert.equal(field('result').hidden,true);
+ leave();
  $('activitySet').value=getWorld('space').missions[3].id;
  $('activitySet').onchange();
  $('chooseMultiplication').click();
- assert.match(field('table-name').textContent,/[6-9]$/);
+ assert.match($('goalText').textContent,/Умножение на [6-9]/);
+ leave();
  $('startFreeMultiplication').click();
- assert.equal(field('table-picker').hidden,false);
- field('table').value='7';
- field('table').onchange();
+ assert.equal($('multiplicationTablePicker').hidden,false);
+ $('multiplicationTable').value='7';
+ $('multiplicationTable').onchange();
  assert.equal(JSON.parse(data.get('schitay-multiplication-space-v1')).table,'7');
- for(let i=0;i<10;i++){
-  enter(Number(field('a').textContent)*Number(field('b').textContent));
-  submit();
-  if(i<9)submit();
- }
+ for(let i=0;i<10;i++)solve();
  assert.equal(data.get(profileKey),awarded);
+ $('chooseMath').click();
+ assert.notEqual($('operator').textContent,'×');
+ assert.equal($('multiplicationTablePicker').hidden,true);
+});
+
+test('legacy multiplication draft restores its checked answer on the shared screen',async t=>{
+ const mission=getWorld('space').missions[0].id;
+ const key=`schitay-multiplication-space-${mission}-v1`;
+ const draft={id:'legacy-series',table:'3',problems:Array.from({length:10},(_,i)=>[3,i+1]),index:2,answer:'9',checked:true};
+ const {data,$}=env(t,new Map([[key,JSON.stringify(draft)]]));
+ await import('../app.mjs?adapter-test=multiplication-legacy');
+ $('chooseMultiplication').click();
+ assert.equal($('answer').value,'9');
+ assert.equal($('answer').readOnly,true);
+ assert.equal($('position').textContent,'Пример 3 из 10');
+ assert.equal(JSON.parse(data.get(key)).records.length,3);
+ $('answerForm').listeners.submit({preventDefault(){}});
+ assert.equal($('position').textContent,'Пример 4 из 10');
 });
