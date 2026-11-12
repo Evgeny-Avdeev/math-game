@@ -66,7 +66,7 @@ nav{flex-wrap:wrap;gap:5px}.nav{font-size:14px}.forest-invite{display:flex;align
 .forest-remaining>div{min-width:0;flex-wrap:wrap;gap:6px 12px}.forest-remaining>div>span{flex:1;min-width:90px}.forest-remaining strong{white-space:nowrap}.forest-total{font-size:.55em;font-weight:800}
 
 /* Figudoku uses the same collection, guide and reward layout as tents. */
-.activity-choices{grid-template-columns:repeat(3,minmax(0,1fr))}.activity-choice{flex-wrap:wrap;gap:12px}.activity-choice>span:nth-child(2){flex:1 1 135px}.activity-choice b{font-size:20px}.fig-postcard{background:var(--hero);color:var(--purple)}
+.activity-choices{grid-template-columns:repeat(2,minmax(0,1fr))}.activity-choice{flex-wrap:wrap;gap:12px}.activity-choice>span:nth-child(2){flex:1 1 135px}.activity-choice b{font-size:20px}.fig-postcard{background:var(--hero);color:var(--purple)}
 .fig-board{--fig-n:4;display:grid;grid-template-columns:repeat(var(--fig-n),minmax(0,1fr));width:100%;max-width:430px;margin:20px auto;border:3px solid var(--ink);border-radius:8px;overflow:hidden;background:var(--ink)}
 .fig-board.fig-large{max-width:560px}.fig-cell{position:relative;aspect-ratio:1;min-width:0;padding:3px;display:grid;place-items:center;background:#fffdf8;border:0;border-right:1px solid #cfc6df;border-bottom:1px solid #cfc6df;border-radius:0;color:var(--purple);isolation:isolate;touch-action:manipulation}.fig-cell.block-right{border-right:3px solid var(--ink)}.fig-cell.block-bottom{border-bottom:3px solid var(--ink)}.fig-cell.selected{background:var(--hero);box-shadow:inset 0 0 0 3px var(--purple)}.fig-cell.hinted{background:#fff0ac;box-shadow:inset 0 0 0 3px #e7a334}.fig-cell.invalid{background:#ffe3df;box-shadow:inset 0 0 0 3px #ba4944}.fig-cell:disabled{opacity:1}.fig-cell:focus-visible{outline:3px solid var(--purple);outline-offset:-4px;z-index:2}
 .fig-shape{width:100%;height:100%;max-width:100%;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linejoin:round;overflow:visible}.fig-cell>.fig-shape{position:absolute;inset:8%;width:84%;height:84%;color:var(--purple)}.fig-cell>.fig-shape.given{color:var(--ink)}.fig-number{position:relative;z-index:1;font-weight:900;font-size:clamp(18px,3vw,27px);color:var(--purple);line-height:1;background:#fffdf8e8;border-radius:30%;min-width:1em;text-align:center}.fig-number.given{color:var(--ink)}.fig-number.alone{font-size:clamp(20px,4vw,32px)}.fig-large .fig-number{font-size:clamp(13px,2.2vw,20px)}.fig-large .fig-number.alone{font-size:clamp(15px,2.6vw,23px)}
@@ -167,3 +167,10 @@ nav{flex-wrap:wrap;gap:5px}.nav{font-size:14px}.forest-invite{display:flex;align
 .dog-menu .football-options button[aria-pressed=true]{border-color:#d77432;background:#ffedbf;box-shadow:0 0 0 1px #d77432}
 .dog-menu .football-options button:hover{background:#fff0c7}
 .dog-menu .football-options button:focus-visible{outline-color:#d77432}
+
+#multiplication .equation{margin-top:22px;font-size:clamp(30px,6vw,46px);gap:10px}
+#multiplication .answer{width:90px;height:66px;font-size:36px}
+#multiplication .feedback{text-align:center;margin-bottom:0}
+#multiplication .forest-actions{justify-content:center}
+#multiplication .keypad{margin-top:16px}
+#multiplication .keypad button:last-child{grid-column:span 2}

@@ -2,11 +2,12 @@ import {createActivityLifecycle} from './activity-lifecycle.mjs?v=1';
 import {createActivityRegistry} from './activity-registry.mjs?v=1';
 import {createActivityTutorial} from './activity-tutorial.mjs?v=1';
 import {applyActivityDefinition} from './activity-shell.mjs?v=1';
-import {activityDefinitions} from './activity-definitions.mjs?v=clear-givens-1';
+import {activityDefinitions} from './activity-definitions.mjs?v=multiplication-1';
 const analyticsModule=import('./analytics.mjs?v=1').catch(()=>null);
 function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).catch(()=>{});}
 import {mountFigudoku} from './figudoku-ui.mjs?v=expanded-bank-1';
 import {mountTents} from './tents-ui.mjs?v=expanded-bank-1';
+import {mountMultiplication} from './multiplication-ui.mjs?v=1';
 import {makeProblems,hint} from './math.mjs?v=15';
 import {badgeDefs,currencyBalance,solvedPuzzlesAcrossWorlds,cleanProfile,settle,settlePuzzle,rewardStatus,rewardMessage,rewardModes} from './game.mjs?v=expanded-bank-1';
 import {worlds,getWorld,amount} from './worlds.mjs?v=dogs-names-1';
@@ -267,6 +268,11 @@ figudokuUI=mountFigudoku($('figudoku'),{
  openCollection:()=>requestView('collection')
 });
 activities.register('figudoku',figudokuUI);
+activities.register('multiplication', mountMultiplication($('multiplication'), {
+ definition: activityDefinitions.multiplication,
+ context: () => ({id: worldId, world}),
+ openActivities: () => requestView('home'),
+}));
 if(location.hash==='#tents')view('home');
 
 function goalMission(){
@@ -289,6 +295,7 @@ $('chooseMath').onclick=()=>startMission(goalMission().id);
 $('chooseTents').onclick=()=>view('tents');
 
 $('chooseFigudoku').onclick=()=>view('figudoku');
+$('chooseMultiplication').onclick=()=>requestView('multiplication');
 
 
 
