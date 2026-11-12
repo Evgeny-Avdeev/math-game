@@ -7,7 +7,7 @@ const analyticsModule=import('./analytics.mjs?v=1').catch(()=>null);
 function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).catch(()=>{});}
 import {mountFigudoku} from './figudoku-ui.mjs?v=activity-rewards-1';
 import {mountTents} from './tents-ui.mjs?v=activity-rewards-1';
-import {mountMultiplication} from './multiplication-ui.mjs?v=activity-rewards-1';
+import {makeMultiplicationSeries,multiplicationHint,multiplicationTable,multiplicationTables,restoreMultiplicationDraft,validMultiplicationSeries} from './multiplication.mjs?v=1';
 import {makeProblems,hint} from './math.mjs?v=15';
 import {badgeDefs,currencyBalance,solvedPuzzlesAcrossWorlds,cleanProfile,settle,settleActivity,rewardStatus,rewardMessage,collectionRewardRules} from './game.mjs?v=activity-rewards-1';
 import {worlds,getWorld,amount} from './worlds.mjs?v=dogs-names-1';
@@ -87,41 +87,73 @@ function renderCollection(){
 function openArtifact(a,owned,m){const box=$('artifactDetail');box.replaceChildren();box.append(itemImage(a,owned),el('span','eyebrow',m.title),el('h2','',owned?a.name:worldId==='space'?'Здесь будет сокровище':isFootball()?'Здесь будет новая карточка!':'Здесь будет новый друг!'),el('p','',owned?a.story:`Выполняй это приключение: за удачную игру ты можешь открыть ${world.collectibleAcc}. Выбери занятие для этого набора. ${collectionRewardRules(artifacts.filter(item=>item.mission===m.id).length)} Подсказками пользоваться можно!`));$('artifactDialog').showModal();}
 $('closeArtifact').onclick=()=>$('artifactDialog').close();
 function startMission(id){const m=missions.find(m=>m.id===id);missionId=id;origin='home';start(makeProblems(m.count,'mixed',m.level),m.title,`Собираем набор «${m.title}». Реши ${Math.ceil(m.count*.8)} из ${m.count} примеров · + и − и получи ${world.collectibleAcc}. Подсказки разрешены! ${rewardMessage(rewardStatus(profile,id,'math',worldId))}`);}
-let mathStart,mathSessionId;
+let mathStart,mathSessionId,seriesTable,multiplicationComplete;
+const arithmeticTutorials = new Map();
+const isMultiplication = () => mathStart?.mode==='multiplication';
+const problemHint = () => (isMultiplication()?multiplicationHint:hint)(problems[index]);
 const mathLifecycle=createActivityLifecycle({
- key:()=>`schitay-math-${worldId}-${missionId||origin}-v1`,
+ key:()=>isMultiplication()
+  ? `schitay-multiplication-${worldId}${missionId?'-'+missionId:''}-v1`
+  : `schitay-math-${worldId}-${missionId||origin}-v1`,
  id:()=>mathSessionId,render:()=>{active=true;},
  solved:()=>active&&index===problems.length,
  lock:()=>{active=false;},
- snapshot:completed=>({completed,id:mathSessionId,problems,records,index,streak,bestStreak,attempts,hinted,checked,earned,missionId,origin,
+ snapshot:completed=>({completed,id:mathSessionId,mode:mathStart.mode,table:seriesTable,problems,records,index,streak,bestStreak,attempts,hinted,checked,earned,missionId,origin,
   title:$('playTitle').textContent,goal:$('goalText').textContent,answer:$('answer').value,feedback:$('feedback').textContent}),
  load(saved){
-  const valid=saved&&!saved.completed&&Array.isArray(saved.problems)&&saved.problems.length>0&&saved.problems.length<=100
-   &&saved.problems.every(p=>Number.isInteger(p.a)&&Number.isInteger(p.b)&&['+','−'].includes(p.op)&&p.answer===(p.op==='+'?p.a+p.b:p.a-p.b))
-   &&Number.isInteger(saved.index)&&saved.index>=0&&saved.index<saved.problems.length
-   &&Array.isArray(saved.records)&&saved.records.length===saved.index+(saved.checked?1:0)
-   &&saved.records.every((r,i)=>r&&r.p&&r.p.a===saved.problems[i].a&&r.p.b===saved.problems[i].b&&r.p.op===saved.problems[i].op&&typeof r.first==='boolean'&&typeof r.skipped==='boolean')
-   &&['streak','bestStreak','attempts','earned'].every(k=>Number.isSafeInteger(saved[k])&&saved[k]>=0)
-   &&saved.missionId===missionId&&saved.origin===origin&&typeof saved.id==='string';
-  const draft=valid?saved:null;
-  problems=draft?draft.problems:mathStart.list;records=draft?draft.records:[];
+  const multiplication=isMultiplication();
+  const level=missionId&&missions.find(m=>m.id===missionId).level;
+  if(multiplication) saved=restoreMultiplicationDraft(saved,missionId,origin);
+  const validProblems=Array.isArray(saved?.problems)&&saved.problems.length>0&&saved.problems.length<=100
+   &&(multiplication?validMultiplicationSeries(saved.problems,saved.table,level)
+     :saved.problems.every(p=>p&&Number.isInteger(p.a)&&Number.isInteger(p.b)&&['+','−'].includes(p.op)&&p.answer===(p.op==='+'?p.a+p.b:p.a-p.b)));
+  const sameSeries=validProblems&&saved.missionId===missionId&&saved.origin===origin&&typeof saved.id==='string';
+  const recordCount=saved?.completed?saved.problems?.length:saved?.index+(saved?.checked?1:0);
+  const validRecords=sameSeries&&Array.isArray(saved.records)&&saved.records.length===recordCount
+   &&saved.records.every((r,i)=>r?.p&&saved.problems[i]&&r.p.a===saved.problems[i].a&&r.p.b===saved.problems[i].b&&r.p.op===saved.problems[i].op
+    &&typeof r.first==='boolean'&&typeof r.skipped==='boolean'&&(!multiplication||!r.skipped));
+  if(multiplication&&missionId&&validRecords&&saved.completed&&recordCount===saved.problems.length) {
+   multiplicationComplete(saved.id,missionId,{solved:saved.problems.length});
+  }
+  const draft=validRecords&&!saved.completed&&Number.isInteger(saved.index)&&saved.index>=0&&saved.index<saved.problems.length
+   &&['streak','bestStreak','attempts','earned'].every(k=>Number.isSafeInteger(saved[k])&&saved[k]>=0)?saved:null;
+  if(multiplication){
+   const previous=sameSeries?saved.table:mathStart.previousTable;
+   seriesTable=draft?.table??(missionId?multiplicationTable(level,previous):mathStart.table??previous??'mixed');
+  }else seriesTable=undefined;
+  problems=draft?draft.problems:multiplication?makeMultiplicationSeries(seriesTable):mathStart.list;
+  records=draft?draft.records:[];
   index=draft?draft.index:0;streak=draft?draft.streak:0;bestStreak=draft?draft.bestStreak:0;earned=draft?draft.earned:0;
   mathSessionId=draft?draft.id:crypto.randomUUID();active=true;
-  $('playTitle').textContent=draft?draft.title:mathStart.title;
+  $('playTitle').textContent=draft?.title??mathStart.title;
   $('mathSetProgress').textContent=missionId?'Решай примеры и пополняй коллекцию':'Тренировка в своём темпе';
-  $('goalText').textContent=draft?draft.goal:mathStart.goal;setCurrency($('sessionStars'),earned);show();
+  $('goalText').textContent=multiplication
+   ? `${seriesTable==='mixed'?'Вперемешку':'Умножение на '+seriesTable}. ${mathStart.goal}`
+   : draft?.goal??mathStart.goal;
+  setCurrency($('sessionStars'),earned);show();
   if(draft){attempts=draft.attempts;hinted=!!draft.hinted;checked=!!draft.checked;$('answer').value=String(draft.answer||'');
    $('answer').readOnly=checked;$('answer').className='answer'+(checked?' correct':'');
-   feedback(draft.feedback||'');$('skip').hidden=checked;$('hint').disabled=checked;
-   $('hintBox').hidden=!hinted;if(hinted)$('hintBox').textContent=hint(problems[index]);
-   if(checked)$('submit').textContent=index===problems.length-1?'Забрать награды! 🎉':'Ещё пример →';
+   feedback(draft.feedback||'');$('skip').hidden=checked||multiplication;$('hint').disabled=checked;
+   $('hintBox').hidden=!hinted;if(hinted)$('hintBox').textContent=problemHint();
+   if(checked)$('submit').textContent=nextAnswerLabel();
+   $('streak').textContent=`🔥 ${streak} подряд`;
   }
-  track('game_start',{world:worldId,game:'math'});
+  track('game_start',{world:worldId,game:mathStart.mode});
  },
  complete:finishResult,
  onStorageError:()=>{storageOK=false;},
 });
-function start(list,title,goal){mathStart={list,title,goal};mathLifecycle.enter();view('play');}
+function start(list,title,goal){openArithmetic({mode:'math',list,title,goal});}
+function openArithmetic(config){
+ mathStart=config;
+ const multiplication=isMultiplication();
+ applyActivityDefinition($('play'),activityDefinitions[config.mode]);
+ $('multiplicationTablePicker').hidden=!multiplication||!!missionId;
+ $('answerSign').hidden=multiplication;
+ mathLifecycle.enter();
+ if(multiplication&&!missionId)$('multiplicationTable').value=seriesTable;
+ view('play');
+}
 function persistMath(){if(active)mathLifecycle.persist();}
 window.addEventListener('pagehide',persistMath);
 
@@ -130,23 +162,28 @@ function show(){
  $('position').textContent=`Пример ${index+1} из ${problems.length}`;$('progress').style.width=`${index/problems.length*100}%`;
  $('numA').textContent=p.a;$('numB').textContent=p.b;$('operator').textContent=p.op;
  const a=$('answer');a.value='';a.readOnly=false;a.className='answer';a.removeAttribute('aria-invalid');
- $('feedback').textContent='';$('feedback').className='feedback';$('submit').textContent='Проверить ✓';$('hintBox').hidden=true;$('hint').disabled=false;$('skip').hidden=false;
- $('buddyText').textContent=['Не спеши. Ты справишься!','Прибавляй или вычитай по частям.','Если трудно — позови меня!'][index%3];
+ $('feedback').textContent='';$('feedback').className='feedback';$('submit').textContent='Проверить ✓';$('hintBox').hidden=true;$('hint').disabled=false;$('skip').hidden=isMultiplication();
+ $('buddyText').textContent=['Не спеши. Ты справишься!',isMultiplication()?'Вспомни таблицу умножения.':'Прибавляй или вычитай по частям.','Если трудно — позови меня!'][index%3];
  $('streak').textContent=`🔥 ${streak} подряд`;$('dots').replaceChildren();
  for(let i=0;i<problems.length;i++){const d=el('span',`dot${i<index?(records[i].skipped?' skipped':' done'):i===index?' current':''}`);d.setAttribute('aria-label',`${i+1}: ${i<index?(records[i].skipped?'пропущен':'решён'):i===index?'сейчас':'впереди'}`);$('dots').append(d);}
+}
+function nextAnswerLabel(){
+ if(index<problems.length-1)return 'Ещё пример →';
+ return isMultiplication()&&!missionId?'К результатам 🎉':'Забрать награды! 🎉';
 }
 function next(){index++;if(index===problems.length)finish();else{show();persistMath();}}
 $('answerForm').addEventListener('submit',e=>{
  e.preventDefault();if(!active)return;if(checked){next();return;}
- const raw=$('answer').value.trim().replace('−','-');if(!/^-?\d+$/.test(raw)){feedback('Сначала введи число 😊',true);return;}
+ const raw=$('answer').value.trim().replace('−','-');if(!(isMultiplication()?/^\d+$/:/^-?\d+$/).test(raw)){feedback('Сначала введи число 😊',true);return;}
  const p=problems[index];
  if(Number(raw)===p.answer){
-  const first=attempts===0&&!hinted;streak=first?streak+1:0;bestStreak=Math.max(bestStreak,streak);earned+=first?3:1;
+  const first=attempts===0&&!hinted;streak=first?streak+1:0;bestStreak=Math.max(bestStreak,streak);const gain=isMultiplication()?Number(!!missionId):first?3:1;earned+=gain;
   records.push({p,first,attempts,hinted,skipped:false});checked=true;$('answer').readOnly=true;$('answer').className='answer correct';$('answer').removeAttribute('aria-invalid');
-  feedback(first?`${['Ура! Всё верно!','Вот это да!','Отличный ответ!'][index%3]} +${amount(3,world)} 🎉`:`Получилось! +${amount(1,world)} за старание 💛`);
-  $('submit').textContent=index===problems.length-1?'Забрать награды! 🎉':'Ещё пример →';$('skip').hidden=true;$('hint').disabled=true;$('streak').textContent=`🔥 ${streak} подряд`;setCurrency($('sessionStars'),earned);
+  const praise=first?['Ура! Всё верно!','Вот это да!','Отличный ответ!'][index%3]:'Получилось!';
+  feedback(gain?`${praise} +${amount(gain,world)} ${first?'🎉':'💛'}`:praise);
+  $('submit').textContent=nextAnswerLabel();$('skip').hidden=true;$('hint').disabled=true;$('streak').textContent=`🔥 ${streak} подряд`;setCurrency($('sessionStars'),earned);
   setSpeech($('buddyText'),streak>=5?`Пять подряд и больше! ${highFive()}`:'Я знал, что у тебя получится!');
- }else{attempts++;streak=0;$('streak').textContent='🔥 0 подряд';$('answer').className='answer wrong';$('answer').setAttribute('aria-invalid','true');feedback(`Почти! Попробуй ещё или позови на помощь 💡`,true);$('buddyText').textContent='Ошибки помогают учиться. Давай попробуем вместе!';$('answer').focus();$('answer').select();}
+ }else{attempts++;streak=0;$('streak').textContent='🔥 0 подряд';$('answer').className='answer wrong';$('answer').setAttribute('aria-invalid','true');feedback(`Почти! Попробуй ещё или позови на помощь 💡`,true);$('buddyText').textContent='Ошибки помогают учиться. Давай попробуем вместе!';if(!isMultiplication()){$('answer').focus();$('answer').select();}}
  persistMath();
 });
 function setSpeech(target,text){
@@ -159,30 +196,43 @@ function setSpeech(target,text){
 }
 function highFive(){return isDog()||worldId==='cat'?'Дай лапу!':'Дай пять! 🖐';}
 function feedback(text,bad=false){$('feedback').textContent=text;$('feedback').className='feedback'+(bad?' bad':'');}
-$('hint').onclick=()=>{hinted=true;streak=0;$('streak').textContent='🔥 0 подряд';$('hintBox').textContent=hint(problems[index]);$('hintBox').hidden=false;$('buddyText').textContent='Посчитаем по частям — так проще!';persistMath();};
-$('skip').onclick=()=>{records.push({p:problems[index],first:false,attempts,hinted,skipped:true});streak=0;next();};
+$('hint').onclick=()=>{hinted=true;streak=0;$('streak').textContent='🔥 0 подряд';$('hintBox').textContent=problemHint();$('hintBox').hidden=false;$('buddyText').textContent='Посчитаем по частям — так проще!';persistMath();};
+$('skip').onclick=()=>{if(isMultiplication())return;records.push({p:problems[index],first:false,attempts,hinted,skipped:true});streak=0;next();};
 $('answer').oninput=()=>{if(!checked){$('answer').className='answer';$('answer').removeAttribute('aria-invalid');$('feedback').textContent='';persistMath();}};
-$('keypad').onclick=e=>{const b=e.target.closest('[data-key]');if(!b||checked)return;const a=$('answer'),k=b.dataset.key;if(k==='del')a.value=a.value.slice(0,-1);else if(k==='minus')a.value=a.value.startsWith('-')?a.value.slice(1):'-'+a.value;else if(a.value.length<4)a.value+=k;a.dispatchEvent(new Event('input'));};
+$('keypad').onclick=e=>{const b=e.target.closest('[data-key]');if(!b||checked||(isMultiplication()&&b.dataset.key==='minus'))return;const a=$('answer'),k=b.dataset.key;if(k==='del')a.value=a.value.slice(0,-1);else if(k==='minus')a.value=a.value.startsWith('-')?a.value.slice(1):'-'+a.value;else if(a.value.length<4)a.value+=k;a.dispatchEvent(new Event('input'));};
 function finish(){mathLifecycle.complete();}
 function finishResult(){
- track('game_complete',{world:worldId,game:'math',solved:records.filter(r=>!r.skipped).length});
- const result=settle(profile,records,missionId,bestStreak,worldId);profile=result.profile;save();
- lastMistakes=records.filter(r=>!r.first).map(r=>r.p);
- $('resultTitle').textContent=result.success?'Миссия выполнена!':result.solved===0?'Первый шаг сделан!':'Ты отлично потрудился!';
- $('resultText').textContent=result.success?(worldId==='space'?'Космос стал понятнее, а коллекция — богаче!':(world.successText||'В твоей команде появился новый хвостатый друг!')):missionId?`Для награды нужно решить хотя бы ${Math.ceil(problems.length*.8)} из ${problems.length} примеров. Попробуй ещё: ${world.buddy} поможет!`:`Каждый решённый пример делает тебя увереннее. ${highFive()}`;
- if(result.success&&!result.reward)$('resultText').textContent=`${rewardMessage(result.rewardStatus)} А ${world.currency} — награда за практику.`;
- setSpeech($('resultText'),$('resultText').textContent);
+ const multiplication=isMultiplication();
+ const solved=records.filter(r=>!r.skipped).length;
+ track('game_complete',{world:worldId,game:mathStart.mode,solved});
+ let result,title,message;
+ if(multiplication){
+  const award=missionId?multiplicationComplete(mathSessionId,missionId,{solved}):null;
+  result={reward:award?.reward,stars:award&&!award.already?earned:0,solved,badges:award?.badges??[]};
+  title=missionId?'Миссия выполнена!':'Ты отлично потрудился!';
+  message=award?.message||'Все примеры решены!';
+  lastMistakes=[];
+ }else{
+  result=settle(profile,records,missionId,bestStreak,worldId);profile=result.profile;save();
+  lastMistakes=records.filter(r=>!r.first).map(r=>r.p);
+  title=result.success?'Миссия выполнена!':result.solved===0?'Первый шаг сделан!':'Ты отлично потрудился!';
+  message=result.success?(worldId==='space'?'Космос стал понятнее, а коллекция — богаче!':(world.successText||'В твоей команде появился новый хвостатый друг!')):missionId?`Для награды нужно решить хотя бы ${Math.ceil(problems.length*.8)} из ${problems.length} примеров. Попробуй ещё: ${world.buddy} поможет!`:`Каждый решённый пример делает тебя увереннее. ${highFive()}`;
+  if(result.success&&!result.reward)message=`${rewardMessage(result.rewardStatus)} А ${world.currency} — награда за практику.`;
+ }
+ $('resultTitle').textContent=title;
+ setSpeech($('resultText'),message);
+ $('nextMission').textContent=multiplication?'Новая серия →':`К ${world.place} →`;
+ $('nextMission').onclick=multiplication?()=>openMultiplication(!missionId,seriesTable):()=>view('home');
  $('resultStats').replaceChildren();for(const [v,t] of [[`+${result.stars}` ,world.unit[2]+' получено'],[`${result.solved}/${records.length}`,'решено примеров'],[records.filter(r=>r.first).length,'с первого раза']]){const d=el('div','result-stat');d.append(el('b','',v),el('span','',t));$('resultStats').append(d);}
  $('rewardBox').replaceChildren();$('rewardBox').hidden=!result.reward;if(result.reward){const a=result.reward;$('rewardBox').append(el('span','reward-label',world.rewardTitle||(worldId==='space'?'НОВЫЙ АРТЕФАКТ!':'НОВАЯ ПОРОДА В КОЛЛЕКЦИИ!')),itemImage(a,true),el('h2','',a.name),el('p','',a.story));}
  $('newBadges').textContent=result.badges.map(b=>{const themed=themedBadges().find(d=>d.id===b.id);return `${themed.icon} Новый значок: ${themed.name}!`;}).join(' · ');
  $('review').replaceChildren();for(const r of records){const row=el('div','review-row');row.append(el('span','',`${r.skipped?'↻':'✓'} ${r.p.a} ${r.p.op} ${r.p.b} = ${r.p.answer}`),el('small','',r.skipped?'Попробуй ещё':r.first?'С первого раза':r.hinted?'С подсказкой':'Справился!'));$('review').append(row);}
- $('retry').hidden=!lastMistakes.length;view('result');if(result.solved)celebrate();
+ $('retry').hidden=!lastMistakes.length;view('result');if(result.solved&&(!multiplication||!missionId))celebrate();
 }
 function celebrate(){const box=$('confetti');box.replaceChildren();for(let i=0;i<26;i++){const c=el('i','confetto');c.style.setProperty('--x',`${Math.random()*100}%`);c.style.setProperty('--c',['#b99ae9','#ffce7e','#9cd5b9','#8cc9e7'][i%4]);c.style.setProperty('--delay',`${Math.random()*.4}s`);box.append(c);}setTimeout(()=>box.replaceChildren(),3000);}
 $('retry').onclick=()=>{missionId=null;origin='home';start(lastMistakes.map(p=>({...p})),'Ещё одна попытка',`Повтори трудные примеры. За каждый ответ — ${world.currency}!`);};
 $('startFree').onclick=()=>{missionId=null;origin='free';start(makeProblems(Number($('count').value),'mixed',$('level').value,$('negative').checked),'Просто играем!',`Считай в своём темпе и собирай ${world.currency}.`);};
 $('goMission').onclick=()=>$('activityHub').scrollIntoView({behavior:'smooth',block:'start'});
-$('nextMission').onclick=()=>view('home');
 function requestView(id){pendingWorld=null;if(active){persistMath();pendingView=id;$('leaveDialog').showModal();}else view(id);}
 let pendingView='home';$('leave').onclick=()=>requestView(origin);$('stay').onclick=()=>{pendingWorld=null;$('leaveDialog').close();};$('confirmLeave').onclick=()=>{persistMath();active=false;$('leaveDialog').close();if(pendingWorld){const id=pendingWorld;pendingWorld=null;switchWorld(id);}else view(pendingView);};
 for(const b of document.querySelectorAll('[data-view]'))b.onclick=()=>requestView(b.dataset.view);
@@ -256,9 +306,10 @@ function activityContext(definition){
  return {id:worldId,world,missions,profile,solvedPuzzles,targetMission:goalMission()};
 }
 
-function registerActivity(definition, mount, {viewId = definition.id, choiceId, open} = {}){
+function registerActivity(definition, mount, {viewId = definition.id, choiceId, open, sharedView=false} = {}){
  const reward = (id, set, details) => {
   const result = settleActivity(profile, definition.id, id, set, worldId, details);
+  const badges=badgeDefs.filter(badge=>!profile.badges.includes(badge.id)&&result.profile.badges.includes(badge.id));
   profile = result.profile;
   if (!result.already) {
    save();
@@ -267,7 +318,7 @@ function registerActivity(definition, mount, {viewId = definition.id, choiceId, 
   const message = result.already ? 'За это задание награда уже получена.'
    : result.reward ? `Новая карточка: ${result.reward.name}`
    : rewardMessage(result.rewardStatus);
-  return {...result, message, image: result.reward ? itemImage(result.reward, true) : null};
+  return {...result, badges, message, image: result.reward ? itemImage(result.reward, true) : null};
  };
  let root = $(viewId);
  if (!root) {
@@ -284,7 +335,7 @@ function registerActivity(definition, mount, {viewId = definition.id, choiceId, 
   reward,
   complete: reward,
  });
- activities.register(viewId, controller);
+ if(!sharedView)activities.register(viewId, controller);
  let choice = choiceId ? $(choiceId) : null;
  let goal;
  if (choice) goal = choice.querySelector('small');
@@ -305,25 +356,32 @@ function registerActivity(definition, mount, {viewId = definition.id, choiceId, 
 }
 
 registerActivity(activityDefinitions.math, root => {
- applyActivityDefinition(root, activityDefinitions.math);
- const tutorial = createActivityTutorial(root, {definition:activityDefinitions.math,label:'Как решать примеры'});
- return {showTutorialIfFirst:tutorial.visit.openIfFirst};
+ const tutorial=createActivityTutorial(root,{definition:activityDefinitions.math,label:'Как решать примеры'});
+ arithmeticTutorials.set('math',tutorial.visit);
+ return {showTutorialIfFirst:()=>arithmeticTutorials.get(mathStart.mode).openIfFirst()};
 }, {viewId:'play',choiceId:'chooseMath',open:()=>startMission(goalMission().id)});
 registerActivity(activityDefinitions.tents, mountTents, {choiceId:'chooseTents'});
 registerActivity(activityDefinitions.figudoku, mountFigudoku, {choiceId:'chooseFigudoku'});
-let multiplicationPractice = false;
-function openMultiplication(practice) {
- multiplicationPractice = practice;
- requestView('multiplication');
+function openMultiplication(practice,previousTable){
+ missionId=practice?null:goalMission().id;
+ origin=practice?'free':'home';
+ openArithmetic({
+  mode:'multiplication',previousTable,title:practice?'Свободная тренировка':goalMission().title,
+  goal:practice?'Решай в своём темпе.':`Реши 10 примеров. ${rewardMessage(rewardStatus(profile,missionId,'multiplication',worldId))}`,
+ });
 }
-registerActivity(activityDefinitions.multiplication,
- (root,services) => mountMultiplication(root,{
-  ...services,
-  isPractice:()=>multiplicationPractice,
-  openActivities:()=>requestView(multiplicationPractice?'free':'home'),
- }),
- {choiceId:'chooseMultiplication',open:()=>openMultiplication(false)});
+registerActivity(activityDefinitions.multiplication,(root,services)=>{
+ multiplicationComplete=services.complete;
+ arithmeticTutorials.set('multiplication',createActivityTutorial(root,{definition:services.definition}).visit);
+}, {viewId:'play',sharedView:true,choiceId:'chooseMultiplication',open:()=>openMultiplication(false)});
+for(const id of ['mathLearn','mathLearnWide'])$(id).onclick=()=>arithmeticTutorials.get(mathStart.mode).open();
 $('startFreeMultiplication').onclick=()=>openMultiplication(true);
+$('multiplicationTable').replaceChildren(...multiplicationTables.map(table=>new Option(table==='mixed'?'Вперемешку':`Умножение на ${table}`,table)));
+$('multiplicationTable').onchange=()=>{
+ if(!isMultiplication()||missionId)return;
+ mathStart.table=$('multiplicationTable').value;
+ mathLifecycle.next();
+};
 for (const definition of Object.values(activityDefinitions)) {
  if (definition.mount) registerActivity(definition, definition.mount);
 }

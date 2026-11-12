@@ -168,9 +168,6 @@ nav{flex-wrap:wrap;gap:5px}.nav{font-size:14px}.forest-invite{display:flex;align
 .dog-menu .football-options button:hover{background:#fff0c7}
 .dog-menu .football-options button:focus-visible{outline-color:#d77432}
 
-#multiplication .equation{margin-top:22px;font-size:clamp(30px,6vw,46px);gap:10px}
-#multiplication .answer{width:90px;height:66px;font-size:36px}
-#multiplication .feedback{text-align:center;margin-bottom:0}
-#multiplication .forest-actions{justify-content:center}
-#multiplication .keypad{margin-top:16px}
-#multiplication .keypad button:last-child{grid-column:span 2}
+
+#multiplicationTablePicker{margin-bottom:14px;grid-template-columns:1fr}
+#keypad [data-key="0"]{grid-column:2}
