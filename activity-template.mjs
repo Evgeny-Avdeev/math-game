@@ -5,7 +5,7 @@ import {createActivityTutorial} from './activity-tutorial.mjs?v=1';
 // Reusable host for a serializable task engine. No new game is registered by this file.
 export function mountActivityTemplate(root,{definition,context,openActivities,openCollection,complete,engine,practiceHTML=''}){
  for(const name of ['next','initial','render','inspect'])if(typeof engine?.[name]!=='function')throw Error(`Activity engine needs ${name}()`);
- if(typeof complete!=='function')throw Error('Activity needs an explicit reward/completion adapter');
+ if(typeof complete!=='function')throw Error('Register the activity to receive the shared completion service');
  const id=definition.id;
  if(!/^[a-z][a-z0-9-]*$/.test(id))throw Error('Use a unique activity id with letters, digits and hyphens');
  const $=suffix=>root.querySelector(`#${id}-${suffix}`);
@@ -16,7 +16,7 @@ export function mountActivityTemplate(root,{definition,context,openActivities,op
  <div id="${id}-board" class="activity-board-slot" aria-label="Игровое поле"></div>
  <div id="${id}-feedback" class="forest-feedback" role="status" aria-live="polite" hidden></div>
  <div class="forest-actions"><button class="primary" id="${id}-check" data-activity-action="check">Проверить ✓</button><button class="secondary" id="${id}-undo">↶ Отменить</button><button class="secondary" id="${id}-hint">💡 Подсказка</button><button class="text-button" id="${id}-reset" data-activity-action="reset">Начать заново</button></div>
- <div class="forest-win" id="${id}-win" hidden><h2>Отличная работа!</h2><p id="${id}-prize"></p><button class="primary" id="${id}-next">Следующее задание →</button><button class="text-button" id="${id}-collection">Открыть коллекцию</button></div>`});
+ <div class="forest-win" id="${id}-win" hidden><h2>Отличная работа!</h2><div id="${id}-prize-image" class="forest-prize-image" hidden></div><p id="${id}-prize"></p><button class="primary" id="${id}-next">Следующее задание →</button><button class="text-button" id="${id}-collection">Открыть коллекцию</button></div>`});
  const tutorial=createActivityTutorial(root,{definition,practiceHTML});
  let task,state,history=[],locked=false;
  const copy=value=>JSON.parse(JSON.stringify(value));
@@ -41,7 +41,16 @@ export function mountActivityTemplate(root,{definition,context,openActivities,op
    load(next,saved);
   },
   solved:()=>engine.inspect(task,state).solved,lock:()=>{locked=true;},
-  complete(){draw();const result=complete(task.id,context().targetMission.id);$('win').hidden=false;$('prize').textContent=result?.message||'Задание решено!';message('Готово! Можно перейти к следующему заданию.');},
+  complete(){
+   const result=complete(task.id,context().targetMission.id);
+   draw();
+   const image=$('prize-image');
+   image.replaceChildren(...(result?.image?[result.image]:[]));
+   image.hidden=!result?.image;
+   $('win').hidden=false;
+   $('prize').textContent=result?.message||'Задание решено!';
+   message('Готово! Можно перейти к следующему заданию.');
+  },
  });
  $('check').onclick=check;$('undo').onclick=()=>{if(!locked&&history.length){state=history.pop();message();persist();draw();}};
  $('hint').onclick=()=>{if(!locked&&engine.hint)message(engine.hint(task,copy(state)));};

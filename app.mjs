@@ -2,21 +2,20 @@ import {createActivityLifecycle} from './activity-lifecycle.mjs?v=1';
 import {createActivityRegistry} from './activity-registry.mjs?v=1';
 import {createActivityTutorial} from './activity-tutorial.mjs?v=1';
 import {applyActivityDefinition} from './activity-shell.mjs?v=1';
-import {activityDefinitions} from './activity-definitions.mjs?v=multiplication-1';
+import {activityDefinitions} from './activity-definitions.mjs?v=activity-rewards-1';
 const analyticsModule=import('./analytics.mjs?v=1').catch(()=>null);
 function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).catch(()=>{});}
-import {mountFigudoku} from './figudoku-ui.mjs?v=expanded-bank-1';
-import {mountTents} from './tents-ui.mjs?v=expanded-bank-1';
-import {mountMultiplication} from './multiplication-ui.mjs?v=1';
+import {mountFigudoku} from './figudoku-ui.mjs?v=activity-rewards-1';
+import {mountTents} from './tents-ui.mjs?v=activity-rewards-1';
+import {mountMultiplication} from './multiplication-ui.mjs?v=activity-rewards-1';
 import {makeProblems,hint} from './math.mjs?v=15';
-import {badgeDefs,currencyBalance,solvedPuzzlesAcrossWorlds,cleanProfile,settle,settlePuzzle,rewardStatus,rewardMessage,rewardModes} from './game.mjs?v=expanded-bank-1';
+import {badgeDefs,currencyBalance,solvedPuzzlesAcrossWorlds,cleanProfile,settle,settleActivity,rewardStatus,rewardMessage,collectionRewardRules} from './game.mjs?v=activity-rewards-1';
 import {worlds,getWorld,amount} from './worlds.mjs?v=dogs-names-1';
 import {portrait} from './portraits.mjs?v=teams-repair2-20261107';
 const $=id=>document.getElementById(id);
 let worldId='space',world,missions,artifacts,profile,storageOK=true;
-let puzzleUI,figudokuUI,mathTutorialVisit;
 const activities=createActivityRegistry();
-activities.register('play',{showTutorialIfFirst:()=>mathTutorialVisit?.openIfFirst()});
+const activityChoices = new Map();
 const selectedSets={};
 const profiles={};
 let footballMenuOpen=false,dogMenuOpen=false;
@@ -85,7 +84,7 @@ function renderCollection(){
  $('badges').replaceChildren();
  for(const b of themedBadges()){const owned=profile.badges.includes(b.id);const card=el('div',`badge${owned?'':' locked'}`);card.append(el('span','',owned?b.icon:'🔒'),el('b','',b.name),el('p','',owned?'Получено! '+b.description:b.description));$('badges').append(card);}
 }
-function openArtifact(a,owned,m){const box=$('artifactDetail');box.replaceChildren();box.append(itemImage(a,owned),el('span','eyebrow',m.title),el('h2','',owned?a.name:worldId==='space'?'Здесь будет сокровище':isFootball()?'Здесь будет новая карточка!':'Здесь будет новый друг!'),el('p','',owned?a.story:`Выполняй это приключение: за удачную игру ты можешь открыть ${world.collectibleAcc}. Или реши «Деревья и палатки» или «Фигудоку» для этого набора. Чтобы собрать набор, получи карточки всеми тремя способами. Одним способом — не больше 60% набора. Подсказками пользоваться можно!`));$('artifactDialog').showModal();}
+function openArtifact(a,owned,m){const box=$('artifactDetail');box.replaceChildren();box.append(itemImage(a,owned),el('span','eyebrow',m.title),el('h2','',owned?a.name:worldId==='space'?'Здесь будет сокровище':isFootball()?'Здесь будет новая карточка!':'Здесь будет новый друг!'),el('p','',owned?a.story:`Выполняй это приключение: за удачную игру ты можешь открыть ${world.collectibleAcc}. Выбери занятие для этого набора. ${collectionRewardRules(artifacts.filter(item=>item.mission===m.id).length)} Подсказками пользоваться можно!`));$('artifactDialog').showModal();}
 $('closeArtifact').onclick=()=>$('artifactDialog').close();
 function startMission(id){const m=missions.find(m=>m.id===id);missionId=id;origin='home';start(makeProblems(m.count,'mixed',m.level),m.title,`Собираем набор «${m.title}». Реши ${Math.ceil(m.count*.8)} из ${m.count} примеров · + и − и получи ${world.collectibleAcc}. Подсказки разрешены! ${rewardMessage(rewardStatus(profile,id,'math',worldId))}`);}
 let mathStart,mathSessionId;
@@ -194,8 +193,6 @@ $('print').onclick=()=>{
  const grid=el('div','print-grid');list.forEach((p,i)=>grid.append(el('div','',`${i+1}. ${p.a} ${p.op} ${p.b} = ____`)));sheet.append(grid);
  const answers=el('div','answers');answers.append(el('h2','','Ответы для проверки'));const ag=el('div','print-grid');list.forEach((p,i)=>ag.append(el('div','',`${i+1}. ${p.answer}`)));answers.append(ag);sheet.append(answers);window.print();
 };
-applyWorld();updateProfile();view('home',{scroll:false});
-
 function themedBadges(){return badgeDefs.map(b=>b.id==='first'?{...b,name:worldId==='space'?'Первый полёт':'Первое приключение'}:b.id==='collector'?{...b,name:worldId==='space'?'Хранитель сокровищ':'Вся команда в сборе!',description:worldId==='space'?'Собери все 36 артефактов':`Собери все ${artifacts.length} ${isFootball()?(worldId==='footballTeams'?'карточек команд':'карточек футболистов'):isDog()?'пород собак':'пород кошек'}`} : b);}
 function itemImage(a,owned){const d=el('span','artifact-image'+(a.pet?' pet-image':''));if(owned&&a.pet)d.innerHTML=portrait(a);else d.textContent=owned?a.icon:'🔒';return d;}
 function token(){const t=el('span',worldId==='cat'?'sausage-token':'currency-token',worldId==='cat'?'':world.rewardIcon);t.setAttribute('aria-hidden','true');return t;}
@@ -252,28 +249,84 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCollectionMenus();});
 
-function puzzleContext(){return {id:worldId,world,missions,profile,solvedPuzzles:solvedPuzzlesAcrossWorlds(profiles),targetMission:goalMission()};}
+function activityContext(definition){
+ const solvedPuzzles = definition.reward?.puzzles
+  ? solvedPuzzlesAcrossWorlds(profiles)
+  : [...new Set(Object.values(profiles).flatMap(p => p.activityCompletions[definition.id] ?? []))];
+ return {id:worldId,world,missions,profile,solvedPuzzles,targetMission:goalMission()};
+}
 
-puzzleUI=mountTents($('tents'),{
- context:puzzleContext,
- openActivities:()=>requestView('home'),
- reward:(id,set)=>{const result=settlePuzzle(profile,id,set,worldId);profile=result.profile;save();if(!result.already)celebrate();return {...result,image:result.reward?itemImage(result.reward,true):null};},
- openCollection:()=>requestView('collection')
-});
-activities.register('tents',puzzleUI);
-figudokuUI=mountFigudoku($('figudoku'),{
- context:puzzleContext,
- openActivities:()=>requestView('home'),
- reward:(id,set)=>{const result=settlePuzzle(profile,id,set,worldId);profile=result.profile;save();if(!result.already)celebrate();return {...result,image:result.reward?itemImage(result.reward,true):null};},
- openCollection:()=>requestView('collection')
-});
-activities.register('figudoku',figudokuUI);
-activities.register('multiplication', mountMultiplication($('multiplication'), {
- definition: activityDefinitions.multiplication,
- context: () => ({id: worldId, world}),
- openActivities: () => requestView('home'),
-}));
-if(location.hash==='#tents')view('home');
+function registerActivity(definition, mount, {viewId = definition.id, choiceId, open} = {}){
+ const reward = (id, set, details) => {
+  const result = settleActivity(profile, definition.id, id, set, worldId, details);
+  profile = result.profile;
+  if (!result.already) {
+   save();
+   celebrate();
+  }
+  const message = result.already ? 'За это задание награда уже получена.'
+   : result.reward ? `Новая карточка: ${result.reward.name}`
+   : rewardMessage(result.rewardStatus);
+  return {...result, message, image: result.reward ? itemImage(result.reward, true) : null};
+ };
+ let root = $(viewId);
+ if (!root) {
+  root = el('section','view');
+  root.id = viewId;
+  root.hidden = true;
+  document.querySelector('main').append(root);
+ }
+ const controller = mount(root, {
+  definition,
+  context: () => activityContext(definition),
+  openActivities: () => requestView('home'),
+  openCollection: () => requestView('collection'),
+  reward,
+  complete: reward,
+ });
+ activities.register(viewId, controller);
+ let choice = choiceId ? $(choiceId) : null;
+ let goal;
+ if (choice) goal = choice.querySelector('small');
+ else {
+  choice = el('button','activity-choice');
+  choice.type = 'button';
+  const symbol = el('span','activity-symbol',definition.symbol ?? '✦');
+  const text = el('span');
+  const arrow = el('span','','→');
+  for (const decoration of [symbol,arrow]) decoration.setAttribute('aria-hidden','true');
+  goal = el('small');
+  text.append(el('b','',definition.title),goal);
+  choice.append(symbol,text,arrow);
+  document.querySelector('.activity-choices').append(choice);
+ }
+ activityChoices.set(definition.id, goal);
+ choice.onclick = open ?? (() => requestView(viewId));
+}
+
+registerActivity(activityDefinitions.math, root => {
+ applyActivityDefinition(root, activityDefinitions.math);
+ const tutorial = createActivityTutorial(root, {definition:activityDefinitions.math,label:'Как решать примеры'});
+ return {showTutorialIfFirst:tutorial.visit.openIfFirst};
+}, {viewId:'play',choiceId:'chooseMath',open:()=>startMission(goalMission().id)});
+registerActivity(activityDefinitions.tents, mountTents, {choiceId:'chooseTents'});
+registerActivity(activityDefinitions.figudoku, mountFigudoku, {choiceId:'chooseFigudoku'});
+let multiplicationPractice = false;
+function openMultiplication(practice) {
+ multiplicationPractice = practice;
+ requestView('multiplication');
+}
+registerActivity(activityDefinitions.multiplication,
+ (root,services) => mountMultiplication(root,{
+  ...services,
+  isPractice:()=>multiplicationPractice,
+  openActivities:()=>requestView(multiplicationPractice?'free':'home'),
+ }),
+ {choiceId:'chooseMultiplication',open:()=>openMultiplication(false)});
+$('startFreeMultiplication').onclick=()=>openMultiplication(true);
+for (const definition of Object.values(activityDefinitions)) {
+ if (definition.mount) registerActivity(definition, definition.mount);
+}
 
 function goalMission(){
  return missions.find(m=>m.id===selectedSets[worldId])||missions.find(m=>artifacts.some(a=>a.mission===m.id&&!profile.items.includes(a.id)))||missions[0];
@@ -284,22 +337,12 @@ function renderActivity(){
  $('activityDifficulty').textContent=`Сложность: ${difficulty(m)}`;
  const items=artifacts.filter(a=>a.mission===m.id),owned=items.filter(a=>profile.items.includes(a.id)).length;
  $('activityProgress').textContent=`Собрано: ${owned} из ${items.length}`;
- for(const mode of rewardModes){
-  const status=rewardStatus(profile,m.id,mode,worldId),target=$(`${mode}ActivityGoal`);
+ $('activityRewardRules').textContent=collectionRewardRules(items.length);
+ for(const [id,target] of activityChoices){
+  const status=rewardStatus(profile,m.id,id,worldId);
   target.textContent=status.allowed?'Реши и получи карточку':'Только тренировка';
  }
  $('activityTitle').textContent=owned===items.length?'Набор собран! Продолжим играть?':'Как получим следующую карточку?';
 }
 $('activitySet').onchange=()=>{selectedSets[worldId]=$('activitySet').value;renderActivity();};
-$('chooseMath').onclick=()=>startMission(goalMission().id);
-$('chooseTents').onclick=()=>view('tents');
-
-$('chooseFigudoku').onclick=()=>view('figudoku');
-$('chooseMultiplication').onclick=()=>requestView('multiplication');
-
-
-
-
-applyActivityDefinition($('play'),activityDefinitions.math);
-mathTutorialVisit=createActivityTutorial($('play'),{definition:activityDefinitions.math,label:'Как решать примеры'}).visit;
-
+applyWorld();updateProfile();view('home',{scroll:false});

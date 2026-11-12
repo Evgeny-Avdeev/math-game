@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {getWorld} from '../worlds.mjs';
-import {cleanProfile,settle,settlePuzzle,rewardStatus} from '../game.mjs';
+import {cleanProfile,settle,settleActivity,settlePuzzle,rewardStatus} from '../game.mjs';
 import {portrait} from '../portraits.mjs';
 test('36 distinct clubs in four nine-card sets, rendered as club cards',()=>{
  const w=getWorld('footballTeams');assert.equal(w.id,'footballTeams');
@@ -26,8 +26,9 @@ test('team rewards require varied activities and finish independently for every 
  for(const m of getWorld(w).missions){
   for(let i=0;i<5;i++)p=settle(p,Array.from({length:m.count},()=>({first:true})),m.id,0,w).profile;
   assert.equal(rewardStatus(p,m.id,'math',w).reason,'limit');
-  for(let i=1;i<=3;i++)p=settlePuzzle(p,`forest-${m.id==='teams0'?5:m.id==='teams3'?8:6}-${(m.id==='teams2'?3:0)+i}`,m.id,w).profile;
+  for(let i=1;i<=2;i++)p=settlePuzzle(p,`forest-${m.id==='teams0'?5:m.id==='teams3'?8:6}-${(m.id==='teams2'?3:0)+i}`,m.id,w).profile;
   assert.equal(rewardStatus(p,m.id,'tents',w).reason,'reserved');
+  p=settleActivity(p,'multiplication',`series-${m.id}`,m.id,w).profile;
   p=settlePuzzle(p,`figudoku-${m.id==='teams0'?'easy':m.id==='teams3'?'hard':'medium'}-${m.id==='teams2'?2:1}`,m.id,w).profile;
  }
  assert.equal(p.items.length,36);assert.ok(p.badges.includes('collector'));
