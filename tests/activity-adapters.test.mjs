@@ -59,21 +59,21 @@ test('actual math adapter restores checked answer, leaves/resumes, finishes once
  assert.equal(JSON.parse(data.get(key)).earned,1);
 });
 
-test('multiplication resumes its draft and completes a whole table without changing the collection',async t=>{
+test('multiplication resumes its draft and awards one card in game mode and retains table selection in practice',async t=>{
  const {data,$}=env(t);
  await import('../app.mjs?adapter-test=multiplication');
- const profileKey='schitay-space-v1', profile='{"items":[]}';
- data.set(profileKey,profile);
+ const profileKey='schitay-space-v1';
  $('chooseMultiplication').click();
  const root=$('multiplication'), field=name=>root.querySelector(`#multiplication-${name}`);
- const key='schitay-multiplication-space-v1', draft=()=>JSON.parse(data.get(key));
+ const mission=getWorld('space').missions[0].id;
+ const key=`schitay-multiplication-space-${mission}-v1`, draft=()=>JSON.parse(data.get(key));
  const submit=()=>field('form').listeners.submit({preventDefault(){}});
  const enter=value=>{field('answer').value=String(value);field('answer').oninput();};
- assert.equal(draft().table,'mixed');
+ const table=draft().table;
+ assert.ok(['2','3','4','5'].includes(table));
+ assert.equal(field('table-picker').hidden,true);
  assert.equal(data.get('schitay-tutorial-multiplication-seen-v1'),'1');
- field('table').value='7';
- field('table').onchange();
- assert.deepEqual(draft().problems.map(([a,b])=>{assert.equal(a,7);return b;}).sort((a,b)=>a-b),
+ assert.deepEqual(draft().problems.map(([a,b])=>{assert.equal(a,Number(table));return b;}).sort((a,b)=>a-b),
   [1,2,3,4,5,6,7,8,9,10]);
  field('hint').click();
  assert.match(field('feedback').textContent,/Сложи|Возьми/);
@@ -91,9 +91,29 @@ test('multiplication resumes its draft and completes a whole table without chang
  }
  assert.equal(field('result').hidden,false);
  assert.equal(field('progress').textContent,'10 из 10');
- assert.equal(data.get(profileKey),profile);
- field('again').click();
- assert.equal(draft().table,'7');
+ const awarded=data.get(profileKey);
+ const savedProfile=JSON.parse(awarded);
+ assert.equal(savedProfile.items.length,1);
+ assert.equal(savedProfile.itemSources[savedProfile.items[0]],'multiplication');
+ await import('../app.mjs?adapter-test=multiplication-completed');
+ $('chooseMultiplication').click();
+ assert.equal(data.get(profileKey),awarded);
+ assert.notEqual(draft().table,table);
  assert.equal(draft().index,0);
  assert.equal(field('result').hidden,true);
+ $('activitySet').value=getWorld('space').missions[3].id;
+ $('activitySet').onchange();
+ $('chooseMultiplication').click();
+ assert.match(field('table-name').textContent,/[6-9]$/);
+ $('startFreeMultiplication').click();
+ assert.equal(field('table-picker').hidden,false);
+ field('table').value='7';
+ field('table').onchange();
+ assert.equal(JSON.parse(data.get('schitay-multiplication-space-v1')).table,'7');
+ for(let i=0;i<10;i++){
+  enter(Number(field('a').textContent)*Number(field('b').textContent));
+  submit();
+  if(i<9)submit();
+ }
+ assert.equal(data.get(profileKey),awarded);
 });

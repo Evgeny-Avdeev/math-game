@@ -5,6 +5,11 @@ import {createActivityTutorial} from './activity-tutorial.mjs?v=1';
 const tables = ['mixed', '2', '3', '4', '5', '6', '7', '8', '9'];
 const seriesLength = 10;
 const factors = Array.from({length: seriesLength}, (_, i) => i + 1);
+const tablesByDifficulty = {
+ easy: ['2', '3', '4', '5'],
+ all: ['4', '5', '6', '7'],
+ carry: ['6', '7', '8', '9'],
+};
 
 function makeSeries(table) {
  const leftFactors = table === 'mixed' ? tables.slice(1).map(Number) : [Number(table)];
@@ -13,7 +18,7 @@ function makeSeries(table) {
   const j = Math.floor(Math.random() * (i + 1));
   [problems[i], problems[j]] = [problems[j], problems[i]];
  }
- return {table, problems: problems.slice(0, seriesLength), index: 0, answer: '', checked: false};
+ return {id: crypto.randomUUID(), table, problems: problems.slice(0, seriesLength), index: 0, answer: '', checked: false};
 }
 
 function validDraft(draft) {
@@ -31,7 +36,7 @@ function validDraft(draft) {
      && (!draft.checked || Number(draft.answer) === a * b);
 }
 
-export function mountMultiplication(root, {definition, context, openActivities}) {
+export function mountMultiplication(root, {definition, context, openActivities, openCollection, complete, isPractice}) {
  const options = tables.map(table =>
   `<option value="${table}">${table === 'mixed' ? 'Вперемешку' : 'Умножение на ' + table}</option>`
  ).join('');
@@ -42,7 +47,8 @@ export function mountMultiplication(root, {definition, context, openActivities})
   hintId: 'multiplication-hint', nextId: 'multiplication-again',
   gameHTML: `
    <div class="forest-settings">
-    <div><label for="multiplication-table">Таблица<select id="multiplication-table">${options}</select></label></div>
+    <div><label id="multiplication-table-picker" for="multiplication-table">Таблица<select id="multiplication-table">${options}</select></label>
+      <span class="small muted" id="multiplication-table-label">Таблица</span><b id="multiplication-table-name" tabindex="-1"></b></div>
     <div><span class="small muted">Решено</span><b id="multiplication-progress" role="status"></b></div>
    </div>
    <form id="multiplication-form">
@@ -63,13 +69,15 @@ export function mountMultiplication(root, {definition, context, openActivities})
    </form>
    <div id="multiplication-result" class="forest-win" hidden>
     <h2>Все 10 примеров решены!</h2>
+    <div id="multiplication-prize" class="forest-prize-image"></div>
     <button class="primary" id="multiplication-again">Новая серия →</button>
+    <button class="text-button" id="multiplication-collection">Открыть коллекцию</button>
    </div>`,
  });
- root.querySelector('.forest-current-goal').hidden = true;
  const tutorial = createActivityTutorial(root, {definition});
  const $ = suffix => root.querySelector(`#multiplication-${suffix}`);
  const answer = $('answer');
+ const collectionGoal = root.querySelector('.forest-current-goal');
  let state;
  let nextTable;
 
@@ -85,7 +93,20 @@ export function mountMultiplication(root, {definition, context, openActivities})
   const [a, b] = state.problems[state.index];
   const done = lifecycle.completed;
   guide.update();
+  const {targetMission, world, profile} = context();
+  const practice = isPractice();
+  collectionGoal.hidden = practice;
+  if (!practice) {
+   const items = world.artifacts.filter(item => item.mission === targetMission.id);
+   $('set-title').textContent = targetMission.title;
+   $('set-progress').textContent = `Собрано: ${items.filter(item => profile.items.includes(item.id)).length} из ${items.length}`;
+  }
+  $('table-picker').hidden = !practice;
+  $('table-label').hidden = practice;
+  $('table-name').hidden = practice;
+  $('table-name').textContent = `Умножение на ${state.table}`;
   $('table').value = state.table;
+  $('collection').hidden = practice;
   $('a').textContent = a;
   $('b').textContent = b;
   $('progress').textContent = `${state.index + Number(state.checked)} из ${seriesLength}`;
@@ -102,19 +123,41 @@ export function mountMultiplication(root, {definition, context, openActivities})
  }
 
  const lifecycle = createActivityLifecycle({
-  key: () => `schitay-multiplication-${context().id}-v1`,
+  key: () => {
+   const {id, targetMission} = context();
+   return isPractice() ? `schitay-multiplication-${id}-v1`
+    : `schitay-multiplication-${id}-${targetMission.id}-v1`;
+  },
   id: () => state.table,
   snapshot: () => state,
   load(saved, previousTable) {
-   const hasDraft = validDraft(saved);
+   const practice = isPractice();
+   const {targetMission} = context();
+   const eligible = tablesByDifficulty[targetMission.level];
+   const hasDraft = validDraft(saved) && (practice || eligible.includes(saved.table));
    const finished = hasDraft && saved.index === seriesLength - 1 && saved.checked;
-   state = hasDraft && !finished ? saved : makeSeries(nextTable ?? (hasDraft ? saved.table : previousTable) ?? 'mixed');
+   if (finished && !practice && saved.id) complete(saved.id, targetMission.id, {solved: seriesLength});
+   const choices = eligible.filter(table => table !== (hasDraft ? saved.table : previousTable));
+   const table = practice ? nextTable ?? (hasDraft ? saved.table : previousTable) ?? 'mixed'
+    : choices[Math.floor(Math.random() * choices.length)];
+   state = hasDraft && !finished ? {...saved, id: saved.id || crypto.randomUUID()} : makeSeries(table);
    nextTable = undefined;
    draw();
   },
   render: draw,
   solved: () => state.checked && state.index === seriesLength - 1,
-  complete: draw,
+  complete() {
+   const prize = $('prize');
+   prize.replaceChildren();
+   if (!isPractice()) {
+    const result = complete(state.id, context().targetMission.id, {solved: seriesLength});
+    if (result.image) prize.append(result.image);
+    const message = document.createElement('p');
+    message.textContent = result.message;
+    prize.append(message);
+   }
+   draw();
+  },
  });
 
  function updateAnswer(value) {
@@ -124,6 +167,7 @@ export function mountMultiplication(root, {definition, context, openActivities})
  }
 
  $('table').onchange = () => {
+  if (!isPractice()) return;
   nextTable = $('table').value;
   lifecycle.next();
  };
@@ -161,9 +205,11 @@ export function mountMultiplication(root, {definition, context, openActivities})
   lifecycle.persist();
   draw();
  });
+ $('collection').onclick = openCollection;
  $('again').onclick = () => {
   lifecycle.next();
-  $('table').focus();
+  if (isPractice()) $('table').focus();
+  else $('table-name').focus();
  };
 
  return {enter: lifecycle.enter, showTutorialIfFirst: tutorial.visit.openIfFirst};

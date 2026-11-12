@@ -1,8 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {cleanProfile,settle,settlePuzzle,rewardStatus,rewardModes} from '../game.mjs';
+import {cleanProfile,settle,settleActivity,settlePuzzle,rewardStatus,rewardModes} from '../game.mjs';
 import {getWorld} from '../worlds.mjs';
-function earn(p,w,m,mode,n){return mode==='math'?settle(p,Array.from({length:m.count},()=>({first:true})),m.id,0,w):settlePuzzle(p,`${mode==='tents'?'forest-5':'figudoku-easy'}-${n}`,m.id,w);}
+function earn(p,w,m,mode,n){
+ if(mode==='math')return settle(p,Array.from({length:m.count},()=>({first:true})),m.id,0,w);
+ if(mode==='multiplication')return settleActivity(p,mode,`${m.id}-series-${n}`,m.id,w);
+ return settlePuzzle(p,`${mode==='tents'?'forest-5':'figudoku-easy'}-${n}`,m.id,w);
+}
 test('each activity awards at most five of nine cards, across every set and world',()=>{
  for(const w of ['space','dog','cat','football'])for(const m of getWorld(w).missions)for(const mode of rewardModes){
   let p=cleanProfile(null,w);
@@ -10,28 +14,31 @@ test('each activity awards at most five of nine cards, across every set and worl
   const r=earn(p,w,m,mode,6);assert.equal(r.reward,null);assert.equal(r.rewardStatus.reason,'limit');assert.equal(r.profile.items.length,5);assert.ok(r.profile.stars>p.stars);
  }
 });
-test('last card is reserved for the third mode, in every activity order',()=>{
+test('last cards are reserved for unused activities, in every activity order',()=>{
  for(const a of rewardModes)for(const b of rewardModes.filter(x=>x!==a)){
-  const c=rewardModes.find(x=>x!==a&&x!==b),w='dog',m=getWorld(w).missions[0];let p=cleanProfile(null,w);
+  const [c,d]=rewardModes.filter(x=>x!==a&&x!==b),w='dog',m=getWorld(w).missions[0];let p=cleanProfile(null,w);
   for(let n=1;n<=5;n++)p=earn(p,w,m,a,n).profile;
-  for(let n=6;n<=8;n++)p=earn(p,w,m,b,n).profile;
-  const blocked=earn(p,w,m,b,9);assert.equal(blocked.reward,null);assert.equal(blocked.rewardStatus.reason,'reserved');
-  const final=earn(blocked.profile,w,m,c,10);assert.ok(final.reward);assert.equal(final.profile.items.length,9);
-  assert.deepEqual(rewardModes.map(mode=>rewardStatus(final.profile,m.id,mode,w).counts[mode]).sort(),[1,3,5]);
+  for(let n=6;n<=7;n++)p=earn(p,w,m,b,n).profile;
+  const blocked=earn(p,w,m,b,8);assert.equal(blocked.reward,null);assert.equal(blocked.rewardStatus.reason,'reserved');
+  const penultimate=earn(blocked.profile,w,m,c,9);assert.ok(penultimate.reward);
+  const final=earn(penultimate.profile,w,m,d,10);assert.ok(final.reward);assert.equal(final.profile.items.length,9);
+  assert.deepEqual(rewardModes.map(mode=>rewardStatus(final.profile,m.id,mode,w).counts[mode]).sort(),[1,1,2,5]);
  }
 });
-test('all reachable new collection states can finish and require all three modes',()=>{
+test('all reachable new collection states can finish and require all registered activities',()=>{
  const w='space',m=getWorld(w).missions[0];
+ const seen=new Set();
  function visit(p,counts){
+  const key=counts.join();if(seen.has(key))return;seen.add(key);
   if(p.items.length===9){assert.ok(counts.every(n=>n>0&&n<=5));return;}
   let choices=0;
-  for(let i=0;i<3;i++){
+  for(let i=0;i<rewardModes.length;i++){
    const mode=rewardModes[i];if(!rewardStatus(p,m.id,mode,w).allowed)continue;
    choices++;const r=earn(p,w,m,mode,p.items.length+1);assert.ok(r.reward);const next=[...counts];next[i]++;visit(cleanProfile(r.profile,w),next);
   }
   assert.ok(choices>0,'no collection dead ends');
  }
- visit(cleanProfile(null,w),[0,0,0]);
+ visit(cleanProfile(null,w),rewardModes.map(()=>0));
 });
 test('sources survive reload, are validated, and are independent per set and world',()=>{
  const w=getWorld('cat'),m=w.missions[0];let p=cleanProfile(null,'cat');for(let i=1;i<=5;i++)p=earn(p,'cat',m,'math',i).profile;
@@ -44,5 +51,40 @@ test('legacy cards and complete collections stay intact; partial old collections
   let p=cleanProfile({items:items.slice(0,n),stars:41,solved:24},w);assert.equal(p.items.length,n);assert.equal(p.stars,41);assert.equal(p.solved,24);
   for(let i=n;i<9;i++){const mode=rewardModes.find(mode=>rewardStatus(p,m.id,mode,w).allowed);assert.ok(mode);p=earn(p,w,m,mode,i+1).profile;}
   assert.equal(p.items.length,9);assert.ok(items.every(id=>p.items.includes(id)));
+ }
+});
+
+test('multiplication completion survives reload and cannot pay twice in another set',()=>{
+ const world='space',[first,second]=getWorld(world).missions;
+ const initial=settleActivity(cleanProfile(null,world),'multiplication','series-a',first.id,world,{solved:10});
+ assert.equal(initial.profile.stars,10);
+ assert.equal(initial.profile.solved,10);
+ const profile=cleanProfile(JSON.parse(JSON.stringify(initial.profile)),world);
+ const replay=settleActivity(profile,'multiplication','series-a',second.id,world,{solved:10});
+ assert.equal(replay.already,true);
+ assert.deepEqual(replay.profile,profile);
+ assert.equal(rewardStatus(profile,first.id,'math',world).counts.math,0);
+});
+
+test('a new template definition gets its own limit and preserves its reward source on reload',async()=>{
+ const {activityDefinitions}=await import('../activity-definitions.mjs?v=activity-rewards-1');
+ const id='future-task';
+ activityDefinitions[id]={id,title:'Новое задание',mount(){}};
+ try{
+  const rewards=await import('../game.mjs?test=future-task');
+  const world='space',mission=getWorld(world).missions[0].id;
+  let profile=rewards.cleanProfile(null,world);
+  for(let i=0;i<5;i++){
+   const result=rewards.settleActivity(profile,id,`task-${i}`,mission,world);
+   assert.ok(result.reward);
+   profile=rewards.cleanProfile(JSON.parse(JSON.stringify(result.profile)),world);
+   assert.equal(profile.itemSources[result.reward.id],id);
+  }
+  const status=rewards.rewardStatus(profile,mission,id,world);
+  assert.equal(status.counts[id],5);
+  assert.equal(status.reason,'limit');
+  assert.ok(status.missing.includes('multiplication'));
+ }finally{
+  delete activityDefinitions[id];
  }
 });
