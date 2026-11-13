@@ -1,5 +1,5 @@
 // Copy this file and provide a real engine before adding the definition to activityDefinitions.
-import {mountActivityTemplate} from '../activity-template.mjs?v=activity-rewards-1';
+import {mountActivityTemplate} from '../activity-template.mjs?v=arithmetic-template-1';
 
 export function defineNewActivity(engine){
  return {

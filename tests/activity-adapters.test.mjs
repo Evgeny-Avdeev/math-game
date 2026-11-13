@@ -94,6 +94,7 @@ test('multiplication uses the shared exercise and result screens, with separate 
  assert.equal($('review').children.length,10);
  const awarded=data.get(profileKey);
  const savedProfile=JSON.parse(awarded);
+ assert.equal(savedProfile.stars,38);
  assert.equal(savedProfile.items.length,1);
  assert.equal(savedProfile.itemSources[savedProfile.items[0]],'multiplication');
  await import('../app.mjs?adapter-test=multiplication-completed');
@@ -113,7 +114,9 @@ test('multiplication uses the shared exercise and result screens, with separate 
  $('multiplicationTable').onchange();
  assert.equal(JSON.parse(data.get('schitay-multiplication-space-v1')).table,'7');
  for(let i=0;i<10;i++)solve();
- assert.equal(data.get(profileKey),awarded);
+ const afterPractice=JSON.parse(data.get(profileKey));
+ assert.equal(afterPractice.stars,savedProfile.stars+30);
+ assert.deepEqual(afterPractice.items,savedProfile.items);
  $('chooseMath').click();
  assert.notEqual($('operator').textContent,'×');
  assert.equal($('multiplicationTablePicker').hidden,true);

@@ -83,15 +83,21 @@ function awardCard(p,missionId,mode,worldId){
  if(reward){p.items.push(reward.id);p.itemSources[reward.id]=mode;}
  return {reward,rewardStatus:status};
 }
-export function settle(profile,records,missionId,bestStreak,worldId='space'){
+export const answerReward = ({first,skipped}) => skipped?0:first?3:1;
+
+export function settle(profile,records,missionId,bestStreak,worldId='space',
+ {activityId='math',completionId,count}={}){
  const {missions,artifacts}=getWorld(worldId);
  const p=cleanProfile(profile,worldId);const solved=records.filter(r=>!r.skipped).length;
- const earned=records.reduce((n,r)=>n+(r.skipped?0:r.first?3:1),0);
+ const completions=completionId?(p.activityCompletions[activityId]??=[]):null;
+ if(completions?.includes(completionId))return {profile:p,stars:0,solved,reward:null,badges:[],success:false,already:true};
+ completions?.push(completionId);
+ const earned=records.reduce((n,r)=>n+answerReward(r),0);
  p.solved+=solved;p.bestStreak=Math.max(p.bestStreak,bestStreak);
  const mission=missions.find(m=>m.id===missionId);
- const success=!!mission&&records.length===mission.count&&solved>=Math.ceil(mission.count*.8);
+ const success=!!mission&&records.length===(count??mission.count)&&solved>=Math.ceil(records.length*.8);
  let reward=null,rewardStatus=null;
- if(success){p.completed++;({reward,rewardStatus}=awardCard(p,missionId,'math',worldId));}
+ if(success){p.completed++;({reward,rewardStatus}=awardCard(p,missionId,activityId,worldId));}
  const stars=earned+(success?10:0);p.stars+=stars;
  const badges=badgeDefs.filter(b=>!p.badges.includes(b.id)&&(b.id==='collector'?p.items.length===artifacts.length:b.test(p)));p.badges.push(...badges.map(b=>b.id));
  return {profile:p,stars,solved,reward,rewardStatus,badges,success};
