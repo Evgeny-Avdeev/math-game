@@ -184,7 +184,8 @@ function registerActivity(definition, mount, {viewId = definition.id, choiceId, 
   root = el('section','view');
   root.id = viewId;
   root.hidden = true;
-  document.querySelector('main').append(root);
+  const main = document.querySelector('main');
+  main.insertBefore(root, main.querySelector(':scope > footer'));
  }
  const controller = mount(root, {
   definition,
