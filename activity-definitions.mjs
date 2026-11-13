@@ -1,7 +1,22 @@
+import {puzzles as tentsPuzzles} from './tents-data.mjs?v=1';
+import {figudokuPuzzles} from './figudoku-data.mjs?v=expanded-bank-1';
+
 // Shared copy for headers, wide-screen rules and tutorial introductions.
 export const activityDefinitions={
+  multiplication: {
+    id: 'multiplication',
+    title: 'Таблица умножения',
+    rules: [
+      'В игре таблицу подбирает приложение. В свободной тренировке выбери число от 2 до 9 или режим «Вперемешку».',
+      'Введи ответ и нажми «Проверить». Если ошибёшься, попробуй ещё раз.',
+      'Если трудно, нажми «Подсказка». Она покажет, как заменить умножение сложением.',
+    ],
+    rulesNote: 'В каждой серии 10 примеров. За завершённую серию в игре можно получить карточку.',
+    buddyText: 'Если трудно вспомнить ответ, давай сложим одинаковые числа!',
+  },
   "tents": {
     "id": "tents",
+    reward: {puzzles: tentsPuzzles},
     "title": "Деревья и палатки",
     "eyebrow": "ЛОГИКА И НОВЫЕ ОТКРЫТИЯ",
     "rules": [
@@ -15,6 +30,7 @@ export const activityDefinitions={
   },
   "figudoku": {
     "id": "figudoku",
+    reward: {puzzles: figudokuPuzzles},
     "title": "Фигудоку",
     "eyebrow": "ЦИФРЫ И ФИГУРЫ ДРУЖАТ",
     "rules": [
@@ -28,6 +44,7 @@ export const activityDefinitions={
   },
   "math": {
     "id": "math",
+    reward: {label: 'Сложение и вычитание'},
     "title": "Решаем примеры",
     "eyebrow": "СЧИТАЕМ И ОТКРЫВАЕМ НОВОЕ",
     "rules": [
