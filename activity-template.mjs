@@ -1,9 +1,25 @@
 import {createActivityLifecycle} from './activity-lifecycle.mjs?v=1';
-import {mountActivityShell} from './activity-shell.mjs?v=1';
+import {applyActivityDefinition,mountActivityShell} from './activity-shell.mjs?v=1';
 import {createActivityTutorial} from './activity-tutorial.mjs?v=1';
 
 // Reusable host for a serializable task engine. No new game is registered by this file.
-export function mountActivityTemplate(root,{definition,context,openActivities,openCollection,complete,engine,practiceHTML=''}){
+export function mountActivityTemplate(root,{definition,context,openActivities,openCollection,complete,engine,practiceHTML='',screen}){
+ if(screen){
+  const tutorials=new Map(screen.definitions.map(definition=>[
+   definition.id,createActivityTutorial(root,{definition}).visit,
+  ]));
+  const openTutorial=()=>tutorials.get(screen.activityId()).open();
+  for(const button of root.querySelectorAll('.game-learning button,.guide-learn'))button.onclick=openTutorial;
+  const lifecycle=createActivityLifecycle({
+   ...screen.lifecycle,
+   complete:()=>screen.onComplete(complete(screen.completion())),
+  });
+  return {
+   ...lifecycle,
+   prepare(definition){applyActivityDefinition(root,definition);},
+   showTutorialIfFirst:()=>tutorials.get(screen.activityId()).openIfFirst(),
+  };
+ }
  for(const name of ['next','initial','render','inspect'])if(typeof engine?.[name]!=='function')throw Error(`Activity engine needs ${name}()`);
  if(typeof complete!=='function')throw Error('Register the activity to receive the shared completion service');
  const id=definition.id;

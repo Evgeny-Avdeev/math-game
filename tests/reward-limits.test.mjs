@@ -4,7 +4,7 @@ import {cleanProfile,settle,settleActivity,settlePuzzle,rewardStatus,rewardModes
 import {getWorld} from '../worlds.mjs';
 function earn(p,w,m,mode,n){
  if(mode==='math')return settle(p,Array.from({length:m.count},()=>({first:true})),m.id,0,w);
- if(mode==='multiplication')return settleActivity(p,mode,`${m.id}-series-${n}`,m.id,w);
+ if(mode==='multiplication')return settle(p,Array.from({length:10},()=>({first:true})),m.id,0,w,{activityId:mode,completionId:`${m.id}-series-${n}`,count:10});
  return settlePuzzle(p,`${mode==='tents'?'forest-5':'figudoku-easy'}-${n}`,m.id,w);
 }
 test('each activity awards at most five of nine cards, across every set and world',()=>{
@@ -87,4 +87,21 @@ test('a new template definition gets its own limit and preserves its reward sour
  }finally{
   delete activityDefinitions[id];
  }
+});
+
+test('arithmetic uses the same answer currency and completion bonus for both activities',()=>{
+ const world='dog',mission=getWorld(world).missions[0];
+ const records=Array.from({length:mission.count},(_,i)=>({first:i>=2,skipped:i===1}));
+ const rewards=['math','multiplication'].map(activityId=>{
+  const options={activityId,completionId:'series-1',count:mission.count};
+  const result=settle(cleanProfile(null,world),records,mission.id,2,world,options);
+  assert.equal(result.stars,10+1+3*(mission.count-2));
+  assert.equal(result.profile.itemSources[result.reward.id],activityId);
+  const restored=cleanProfile(JSON.parse(JSON.stringify(result.profile)),world);
+  const replay=settle(restored,records,mission.id,2,world,options);
+  assert.equal(replay.already,true);
+  assert.deepEqual(replay.profile,restored);
+  return result.stars;
+ });
+ assert.equal(rewards[0],rewards[1]);
 });

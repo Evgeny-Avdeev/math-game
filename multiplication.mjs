@@ -1,6 +1,6 @@
 export const multiplicationTables = ['mixed', '2', '3', '4', '5', '6', '7', '8', '9'];
-const seriesLength = 10;
-const factors = Array.from({length: seriesLength}, (_, i) => i + 1);
+export const multiplicationSeriesLength = 10;
+const factors = Array.from({length: multiplicationSeriesLength}, (_, i) => i + 1);
 const tablesByDifficulty = {
  easy: ['2', '3', '4', '5'],
  all: ['4', '5', '6', '7'],
@@ -14,13 +14,13 @@ export function makeMultiplicationSeries(table) {
   const j = Math.floor(Math.random() * (i + 1));
   [problems[i], problems[j]] = [problems[j], problems[i]];
  }
- return problems.slice(0, seriesLength).map(([a,b])=>({a,b,op:'×',answer:a*b}));
+ return problems.slice(0, multiplicationSeriesLength).map(([a,b])=>({a,b,op:'×',answer:a*b}));
 }
 
 function validLegacyDraft(draft) {
  if (!draft || !multiplicationTables.includes(draft.table) || !Array.isArray(draft.problems)
-     || draft.problems.length !== seriesLength || !Number.isInteger(draft.index)
-     || draft.index < 0 || draft.index >= seriesLength
+     || draft.problems.length !== multiplicationSeriesLength || !Number.isInteger(draft.index)
+     || draft.index < 0 || draft.index >= multiplicationSeriesLength
      || typeof draft.answer !== 'string' || !/^\d{0,2}$/.test(draft.answer)
      || typeof draft.checked !== 'boolean') return false;
  if (!draft.problems.every(pair => Array.isArray(pair) && pair.length === 2
@@ -28,7 +28,7 @@ function validLegacyDraft(draft) {
      && (draft.table === 'mixed' || pair[0] === Number(draft.table))
      && factors.includes(pair[1]))) return false;
  const [a, b] = draft.problems[draft.index];
- return new Set(draft.problems.map(pair => pair.join('×'))).size === seriesLength
+ return new Set(draft.problems.map(pair => pair.join('×'))).size === multiplicationSeriesLength
      && (!draft.checked || Number(draft.answer) === a * b);
 }
 
@@ -50,12 +50,12 @@ export function restoreMultiplicationDraft(saved, missionId, origin) {
  };
 }
 
-export function validMultiplicationSeries(problems, table, level) {
+export function validMultiplicationSeries(problems, table, level, {retry=false}={}) {
  if (!(level ? tablesByDifficulty[level] : multiplicationTables).includes(table)
-     || problems.length!==seriesLength) return false;
+     || (retry?problems.length>multiplicationSeriesLength:problems.length!==multiplicationSeriesLength)) return false;
  return problems.every(p=>p&&p.op==='×'&&Number.isInteger(p.a)&&p.a>=2&&p.a<=9
   &&(table==='mixed'||p.a===Number(table))&&factors.includes(p.b)&&p.answer===p.a*p.b)
-  &&new Set(problems.map(p=>p.a+'×'+p.b)).size===seriesLength;
+  &&new Set(problems.map(p=>p.a+'×'+p.b)).size===multiplicationSeriesLength;
 }
 
 export function multiplicationHint({a,b}) {
