@@ -4,7 +4,7 @@ const analyticsModule=import('./analytics.mjs?v=1').catch(()=>null);
 function track(event,data){void analyticsModule.then(m=>m?.track(event,data)).catch(()=>{});}
 import {mountFigudoku} from './figudoku-ui.mjs?v=activity-rewards-1';
 import {mountTents} from './tents-ui.mjs?v=activity-rewards-1';
-import {mountArithmetic} from './arithmetic.mjs?v=1';
+import {mountArithmetic} from './arithmetic.mjs?v=2';
 import {makeProblems} from './math.mjs?v=15';
 import {badgeDefs,currencyBalance,solvedPuzzlesAcrossWorlds,cleanProfile,settle,settleActivity,rewardStatus,rewardMessage,collectionRewardRules} from './game.mjs?v=arithmetic-template-1';
 import {worlds,getWorld} from './worlds.mjs?v=dogs-names-1';

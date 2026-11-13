@@ -13,7 +13,7 @@ class Element{
  querySelectorAll(){return [];}
  append(...nodes){this.children.push(...nodes);}before(){}replaceChildren(...nodes){this.children=nodes;}
  setAttribute(k,v){this[k]=v;}removeAttribute(k){delete this[k];}addEventListener(k,fn){this.listeners[k]=fn;}
- click(){if(!this.disabled)this.onclick?.();}showModal(){this.open=true;}close(){this.open=false;}focus(){}select(){}
+ click(){if(!this.disabled)this.onclick?.();}showModal(){this.open=true;}close(){this.open=false;}focus(){}blur(){}select(){}
 }
 function env(t,data=new Map()){
  const doc={createElement:()=>new Element(),body:new Element(),nodes:new Map(),querySelectorAll:()=>[],querySelector:()=>new Element(),addEventListener(){},getElementById(id){if(!this.nodes.has(id))this.nodes.set(id,new Element());return this.nodes.get(id);}};

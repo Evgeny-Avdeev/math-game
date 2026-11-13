@@ -111,7 +111,12 @@ export function mountArithmetic(root, {$,context,view,track,el,setSpeech,setCurr
   if(index<problems.length-1)return 'Ещё пример →';
   return 'Забрать награды! 🎉';
  }
- function next(){index++;if(index===problems.length)finish();else{show();persistMath();}}
+ function next(){
+  $('answer').blur();
+  index++;
+  if(index===problems.length)finish();
+  else{show();persistMath();}
+ }
  $('answerForm').addEventListener('submit',e=>{
   e.preventDefault();if(!active)return;if(checked){next();return;}
   const raw=$('answer').value.trim().replace('−','-');if(!(isMultiplication()?/^\d+$/:/^-?\d+$/).test(raw)){feedback('Сначала введи число 😊',true);return;}
